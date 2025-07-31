@@ -13,9 +13,9 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
   const [selectedCell, setSelectedCell] = useState<{row: number, col: number} | null>(null);
   const [updating, setUpdating] = useState(false);
 
-  // Initialize selection to first empty cell (upper-left)
+  // Initialize selection to first empty cell (upper-left) only when board first loads
   useEffect(() => {
-    if (board.length === 9 && !selectedCell) {
+    if (board.length === 9 && selectedCell === null) {
       // Find the first empty cell (upper-left most)
       for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
@@ -28,7 +28,7 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
       // If no empty cells, select (0,0)
       setSelectedCell({ row: 0, col: 0 });
     }
-  }, [board, selectedCell]);
+  }, [board.length]); // Only depend on board.length, not board content or selectedCell
 
   useEffect(() => {
     const handleKeyPress = async (event: KeyboardEvent) => {
