@@ -17,47 +17,53 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Get sudoku board for a specific branch
-app.get('/api/board/:branch', async (req, res) => {
+// Create a new game (creates Dolt branch)
+app.post('/api/games', async (req, res) => {
+  try {
+    const { gameName } = req.body;
+    
+    if (!gameName || typeof gameName !== 'string' || gameName.trim().length === 0) {
+      return res.status(400).json({ 
+        error: 'Game name is required and must be a non-empty string' 
+      });
+    }
+    
+    const result = await db.createGame(gameName.trim());
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('Error creating game:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get game board for a specific branch
+app.get('/api/games/:branch/board', async (req, res) => {
   try {
     const branch = req.params.branch;
-    const board = await db.getSudokuBoard(branch);
+    const gameBoard = await db.getGameBoard(branch);
     
-    if (!board) {
+    if (!gameBoard) {
       return res.status(404).json({ 
-        error: 'No board found for this branch',
+        error: 'No game found for this branch',
         branch: branch
       });
     }
     
-    res.json(board);
+    res.json({
+      branch,
+      game_name: gameBoard.game_name,
+      board: gameBoard.board_state,
+      initial_board: gameBoard.initial_board,
+      created_at: gameBoard.created_at
+    });
   } catch (error) {
-    console.error('Error fetching board:', error);
+    console.error('Error fetching game board:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Get sudoku board for default branch (main)
-app.get('/api/board', async (req, res) => {
-  try {
-    const board = await db.getSudokuBoard('main');
-    
-    if (!board) {
-      return res.status(404).json({ 
-        error: 'No board found for this branch',
-        branch: 'main'
-      });
-    }
-    
-    res.json(board);
-  } catch (error) {
-    console.error('Error fetching board:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Create a new sudoku board for a branch
-app.post('/api/board/:branch', async (req, res) => {
+// Update game board state
+app.put('/api/games/:branch/board', async (req, res) => {
   try {
     const branch = req.params.branch;
     const { board } = req.body;
@@ -68,25 +74,50 @@ app.post('/api/board/:branch', async (req, res) => {
       });
     }
     
-    const boardId = await db.createSudokuBoard(branch, board);
-    res.status(201).json({ 
-      id: boardId, 
-      branch: branch,
-      message: 'Board created successfully' 
+    await db.updateGameBoard(branch, board);
+    res.json({ 
+      branch,
+      message: 'Game board updated successfully' 
     });
   } catch (error) {
-    console.error('Error creating board:', error);
+    console.error('Error updating game board:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Get all available branches
-app.get('/api/branches', async (req, res) => {
+// Get all available games
+app.get('/api/games', async (req, res) => {
   try {
-    const branches = await db.getAllBranches();
-    res.json({ branches });
+    const games = await db.getAllGames();
+    res.json({ games });
   } catch (error) {
-    console.error('Error fetching branches:', error);
+    console.error('Error fetching games:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Legacy endpoint for backward compatibility
+app.get('/api/board/:branch', async (req, res) => {
+  try {
+    const branch = req.params.branch;
+    const gameBoard = await db.getGameBoard(branch);
+    
+    if (!gameBoard) {
+      return res.status(404).json({ 
+        error: 'No game found for this branch',
+        branch: branch
+      });
+    }
+    
+    // Return in old format for compatibility
+    res.json({
+      id: gameBoard.id,
+      branch: branch,
+      board: gameBoard.board_state,
+      created_at: gameBoard.created_at
+    });
+  } catch (error) {
+    console.error('Error fetching board:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

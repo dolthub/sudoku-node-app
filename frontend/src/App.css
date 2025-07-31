@@ -35,22 +35,26 @@ main {
   color: #856404;
 }
 
-.branch-selector {
+.game-controls {
   margin-bottom: 20px;
-  padding: 15px;
+  padding: 20px;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 600px;
+  margin: 0 auto 20px auto;
 }
 
-.branch-selector label {
+.game-selector label {
   font-weight: bold;
   margin-right: 10px;
   color: #333;
 }
 
-.branch-selector select {
+.game-selector select {
   padding: 8px 12px;
   border: 2px solid #ddd;
   border-radius: 4px;
@@ -58,14 +62,88 @@ main {
   background-color: white;
   cursor: pointer;
   transition: border-color 0.2s;
+  min-width: 200px;
 }
 
-.branch-selector select:hover {
+.game-selector select:hover {
   border-color: #007bff;
 }
 
-.branch-selector select:focus {
+.game-selector select:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.create-game-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-game-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.create-game-btn:hover {
+  background-color: #218838;
+}
+
+.create-game-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.create-game-form input {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  min-width: 200px;
+}
+
+.create-game-form input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.create-game-form button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.create-game-form button:first-of-type {
+  background-color: #007bff;
+  color: white;
+}
+
+.create-game-form button:first-of-type:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.create-game-form button:first-of-type:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.create-game-form button:last-of-type {
+  background-color: #6c757d;
+  color: white;
+}
+
+.create-game-form button:last-of-type:hover {
+  background-color: #545b62;
 }

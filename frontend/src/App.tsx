@@ -2,10 +2,17 @@ import React, { useState, useEffect } from 'react';
 import SudokuBoard from './components/SudokuBoard';
 import './App.css';
 
-interface SudokuBoardData {
-  id: number;
+interface GameInfo {
   branch: string;
+  game_name: string;
+  created_at: string;
+}
+
+interface GameBoardData {
+  branch: string;
+  game_name: string;
   board: number[][];
+  initial_board: number[][];
   created_at: string;
 }
 
@@ -13,25 +20,28 @@ function App() {
   const [board, setBoard] = useState<number[][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [branches, setBranches] = useState<string[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>('main');
+  const [games, setGames] = useState<GameInfo[]>([]);
+  const [selectedGame, setSelectedGame] = useState<string>('main');
+  const [showCreateGame, setShowCreateGame] = useState(false);
+  const [newGameName, setNewGameName] = useState('');
+  const [creating, setCreating] = useState(false);
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
   useEffect(() => {
-    fetchBranches();
-    fetchBoard(selectedBranch);
-  }, [selectedBranch]);
+    fetchGames();
+    fetchBoard(selectedGame);
+  }, [selectedGame]);
 
-  const fetchBranches = async () => {
+  const fetchGames = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/branches`);
+      const response = await fetch(`${API_BASE_URL}/api/games`);
       if (response.ok) {
         const data = await response.json();
-        setBranches(data.branches);
+        setGames(data.games);
       }
     } catch (err) {
-      console.error('Failed to fetch branches:', err);
+      console.error('Failed to fetch games:', err);
     }
   };
 
@@ -40,13 +50,18 @@ function App() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`${API_BASE_URL}/api/board/${branch}`);
+      // Use legacy endpoint for main branch, new endpoint for game branches
+      const endpoint = branch === 'main' 
+        ? `${API_BASE_URL}/api/board/${branch}`
+        : `${API_BASE_URL}/api/games/${branch}/board`;
+      
+      const response = await fetch(endpoint);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch board: ${response.statusText}`);
       }
       
-      const data: SudokuBoardData = await response.json();
+      const data: GameBoardData = await response.json();
       setBoard(data.board);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load board');
@@ -68,6 +83,38 @@ function App() {
     }
   };
 
+  const createGame = async () => {
+    if (!newGameName.trim()) return;
+    
+    try {
+      setCreating(true);
+      const response = await fetch(`${API_BASE_URL}/api/games`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ gameName: newGameName.trim() }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create game: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Game created:', result);
+      
+      // Refresh games list and select the new game
+      await fetchGames();
+      setSelectedGame(result.branch);
+      setNewGameName('');
+      setShowCreateGame(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create game');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (loading) {
     return <div className="App">Loading...</div>;
   }
@@ -76,7 +123,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>Sudoku Game</h1>
-        <p>Choose a game branch to play</p>
+        <p>Create and play games using Dolt branches</p>
       </header>
       <main>
         {error && (
@@ -86,21 +133,57 @@ function App() {
           </div>
         )}
         
-        <div className="branch-selector">
-          <label htmlFor="branch-select">Game Branch: </label>
-          <select 
-            id="branch-select"
-            value={selectedBranch} 
-            onChange={(e) => setSelectedBranch(e.target.value)}
-          >
-            {branches.length > 0 ? (
-              branches.map(branch => (
-                <option key={branch} value={branch}>{branch}</option>
-              ))
+        <div className="game-controls">
+          <div className="game-selector">
+            <label htmlFor="game-select">Select Game: </label>
+            <select 
+              id="game-select"
+              value={selectedGame} 
+              onChange={(e) => setSelectedGame(e.target.value)}
+            >
+              <option value="main">Default Game (main)</option>
+              {games.map(game => (
+                <option key={game.branch} value={game.branch}>
+                  {game.game_name} ({game.branch})
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="create-game-section">
+            {!showCreateGame ? (
+              <button 
+                className="create-game-btn"
+                onClick={() => setShowCreateGame(true)}
+              >
+                + Create New Game
+              </button>
             ) : (
-              <option value="main">main</option>
+              <div className="create-game-form">
+                <input
+                  type="text"
+                  placeholder="Enter game name"
+                  value={newGameName}
+                  onChange={(e) => setNewGameName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && createGame()}
+                />
+                <button 
+                  onClick={createGame}
+                  disabled={creating || !newGameName.trim()}
+                >
+                  {creating ? 'Creating...' : 'Create'}
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowCreateGame(false);
+                    setNewGameName('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
             )}
-          </select>
+          </div>
         </div>
         
         <SudokuBoard board={board} />
