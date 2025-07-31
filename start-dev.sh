@@ -84,7 +84,7 @@ start_service "Backend Server" "npm run dev" "$(pwd)/backend"
 
 echo ""
 echo "⚛️  3. Starting Frontend Server..."
-start_service "Frontend Server" "npm start" "$(pwd)/frontend"
+start_service "Frontend Server" "BROWSER=none npm start" "$(pwd)/frontend"
 
 echo ""
 echo "✅ All services started!"
