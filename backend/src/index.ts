@@ -51,10 +51,7 @@ app.get('/api/games/:branch/board', async (req, res) => {
     
     res.json({
       branch,
-      game_name: gameBoard.game_name,
-      board: gameBoard.board_state,
-      initial_board: gameBoard.initial_board,
-      created_at: gameBoard.created_at
+      board: gameBoard.board
     });
   } catch (error) {
     console.error('Error fetching game board:', error);
@@ -126,10 +123,8 @@ app.get('/api/board/:branch', async (req, res) => {
     
     // Return in old format for compatibility
     res.json({
-      id: gameBoard.id,
       branch: branch,
-      board: gameBoard.board_state,
-      created_at: gameBoard.created_at
+      board: gameBoard.board
     });
   } catch (error) {
     console.error('Error fetching board:', error);
