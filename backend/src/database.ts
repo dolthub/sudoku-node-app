@@ -69,31 +69,64 @@ class Database {
         )
       `);
       
-      // Generate a random Sudoku puzzle for the new game
-      const initialBoard = this.generateSudokuPuzzle();
+      // Create solution table
+      await branchPool.execute(`
+        CREATE TABLE sudoku_solution (
+          row_num INT NOT NULL,
+          col_num INT NOT NULL,
+          value INT NOT NULL,
+          PRIMARY KEY (row_num, col_num),
+          CHECK (row_num >= 1 AND row_num <= 9),
+          CHECK (col_num >= 1 AND col_num <= 9),
+          CHECK (value >= 1 AND value <= 9)
+        )
+      `);
       
-      // Insert game data into the branch (only filled cells)
-      console.log(`Inserting initial puzzle data for ${gameName}`);
-      const cellsToInsert: [number, number, number][] = [];
+      // Generate a legitimate Sudoku puzzle and solution
+      const { solution, puzzle } = this.generateSudokuPuzzle();
+      
+      // Insert solution data (all 81 cells)
+      console.log(`Inserting solution data for ${gameName}`);
+      const solutionCells: [number, number, number][] = [];
       
       for (let row = 1; row <= 9; row++) {
         for (let col = 1; col <= 9; col++) {
-          const value = initialBoard[row - 1][col - 1];
+          const value = solution[row - 1][col - 1];
+          solutionCells.push([row, col, value]);
+        }
+      }
+      
+      const solutionPlaceholders = solutionCells.map(() => '(?, ?, ?)').join(', ');
+      const solutionValues = solutionCells.flat();
+      
+      await branchPool.execute(
+        `INSERT INTO sudoku_solution (row_num, col_num, value) VALUES ${solutionPlaceholders}`,
+        solutionValues
+      );
+      console.log(`Inserted solution (${solutionCells.length} cells)`);
+      
+      // Insert puzzle data (only filled cells)
+      console.log(`Inserting initial puzzle data for ${gameName}`);
+      const puzzleCells: [number, number, number][] = [];
+      
+      for (let row = 1; row <= 9; row++) {
+        for (let col = 1; col <= 9; col++) {
+          const value = puzzle[row - 1][col - 1];
           if (value !== 0) {
-            cellsToInsert.push([row, col, value]);
+            puzzleCells.push([row, col, value]);
           }
         }
       }
       
-      if (cellsToInsert.length > 0) {
-        const placeholders = cellsToInsert.map(() => '(?, ?, ?)').join(', ');
-        const values = cellsToInsert.flat();
+      if (puzzleCells.length > 0) {
+        const puzzlePlaceholders = puzzleCells.map(() => '(?, ?, ?)').join(', ');
+        const puzzleValues = puzzleCells.flat();
         
         await branchPool.execute(
-          `INSERT INTO sudoku_cells (row_num, col_num, value) VALUES ${placeholders}`,
-          values
+          `INSERT INTO sudoku_cells (row_num, col_num, value) VALUES ${puzzlePlaceholders}`,
+          puzzleValues
         );
-        console.log(`Inserted ${cellsToInsert.length} filled cells in single query`);
+        console.log(`Inserted ${puzzleCells.length} filled cells in puzzle`);
       }
       
       // Commit the changes to the branch
@@ -239,17 +272,42 @@ class Database {
     }
   }
 
-  // Generate a random Sudoku puzzle (simplified version)
-  private generateSudokuPuzzle(): number[][] {
-    // For now, return a predefined puzzle. In a real implementation,
-    // you'd generate a random valid Sudoku puzzle
-    const puzzles = [
-      [[5,3,0,0,7,0,0,0,0],[6,0,0,1,9,5,0,0,0],[0,9,8,0,0,0,0,6,0],[8,0,0,0,6,0,0,0,3],[4,0,0,8,0,3,0,0,1],[7,0,0,0,2,0,0,0,6],[0,6,0,0,0,0,2,8,0],[0,0,0,4,1,9,0,0,5],[0,0,0,0,8,0,0,7,9]],
-      [[0,3,0,0,7,0,0,0,0],[6,0,0,1,9,5,0,0,0],[0,9,8,0,0,0,0,6,0],[8,0,0,0,6,0,0,0,3],[4,0,0,8,0,3,0,0,1],[7,0,0,0,2,0,0,0,6],[0,6,0,0,0,0,2,8,0],[0,0,0,4,1,9,0,0,5],[0,0,0,0,8,0,0,7,9]],
-      [[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,3,0,8,5],[0,0,1,0,2,0,0,0,0],[0,0,0,5,0,7,0,0,0],[0,0,4,0,0,0,1,0,0],[0,9,0,0,0,0,0,0,0],[5,0,0,0,0,0,0,7,3],[0,0,2,0,1,0,0,0,0],[0,0,0,0,4,0,0,0,9]]
-    ];
+  // Generate a legitimate Sudoku puzzle and solution
+  private generateSudokuPuzzle(): { solution: number[][], puzzle: number[][] } {
+    // Create a legitimate Sudoku solution using a systematic pattern
+    const solution: number[][] = [];
     
-    return puzzles[Math.floor(Math.random() * puzzles.length)];
+    for (let row = 0; row < 9; row++) {
+      solution[row] = [];
+      for (let col = 0; col < 9; col++) {
+        // Generate values 1-9 in each row with a systematic shift
+        // This creates a valid Sudoku solution
+        const baseValue = (row % 3) * 3 + Math.floor(row / 3) + 1;
+        const shiftedValue = ((baseValue - 1 + col) % 9) + 1;
+        solution[row][col] = shiftedValue;
+      }
+    }
+    
+    // Create puzzle by removing some cells from the solution
+    const puzzle: number[][] = solution.map(row => [...row]); // Deep copy
+    
+    // Remove exactly 3 cells to create the puzzle
+    const cellsToRemove = 3;
+    const removedPositions = new Set<string>();
+    
+    while (removedPositions.size < cellsToRemove) {
+      const row = Math.floor(Math.random() * 9);
+      const col = Math.floor(Math.random() * 9);
+      const key = `${row},${col}`;
+      
+      if (!removedPositions.has(key)) {
+        puzzle[row][col] = 0; // Remove the cell
+        removedPositions.add(key);
+      }
+    }
+    
+    console.log(`Generated puzzle with ${cellsToRemove} empty cells`);
+    return { solution, puzzle };
   }
 }
 
