@@ -38,4 +38,4 @@ echo "Starting Dolt SQL server on port 3306..."
 echo "Server will be available at localhost:3306"
 echo "Use Ctrl+C to stop the server"
 
-exec dolt sql-server --host 0.0.0.0 --port 3306 --user root --password "" --loglevel=debug
+exec dolt sql-server --host 0.0.0.0 --port 3306 --loglevel=debug
