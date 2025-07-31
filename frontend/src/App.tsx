@@ -21,7 +21,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [games, setGames] = useState<GameInfo[]>([]);
-  const [selectedGame, setSelectedGame] = useState<string>('main');
+  const [selectedGame, setSelectedGame] = useState<string>('');
   const [showCreateGame, setShowCreateGame] = useState(false);
   const [newGameName, setNewGameName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -30,7 +30,12 @@ function App() {
 
   useEffect(() => {
     fetchGames();
-    fetchBoard(selectedGame);
+  }, []);
+
+  useEffect(() => {
+    if (selectedGame) {
+      fetchBoard(selectedGame);
+    }
   }, [selectedGame]);
 
   const fetchGames = async () => {
@@ -50,12 +55,7 @@ function App() {
       setLoading(true);
       setError(null);
       
-      // Use legacy endpoint for main branch, new endpoint for game branches
-      const endpoint = branch === 'main' 
-        ? `${API_BASE_URL}/api/board/${branch}`
-        : `${API_BASE_URL}/api/games/${branch}/board`;
-      
-      const response = await fetch(endpoint);
+      const response = await fetch(`${API_BASE_URL}/api/games/${branch}/board`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch board: ${response.statusText}`);
@@ -65,19 +65,7 @@ function App() {
       setBoard(data.board);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load board');
-      // Fallback to sample board
-      const sampleBoard = [
-        [5, 3, 0, 0, 7, 0, 0, 0, 0],
-        [6, 0, 0, 1, 9, 5, 0, 0, 0],
-        [0, 9, 8, 0, 0, 0, 0, 6, 0],
-        [8, 0, 0, 0, 6, 0, 0, 0, 3],
-        [4, 0, 0, 8, 0, 3, 0, 0, 1],
-        [7, 0, 0, 0, 2, 0, 0, 0, 6],
-        [0, 6, 0, 0, 0, 0, 2, 8, 0],
-        [0, 0, 0, 4, 1, 9, 0, 0, 5],
-        [0, 0, 0, 0, 8, 0, 0, 7, 9]
-      ];
-      setBoard(sampleBoard);
+      setBoard([]);
     } finally {
       setLoading(false);
     }
@@ -115,7 +103,7 @@ function App() {
     }
   };
 
-  if (loading) {
+  if (loading && selectedGame) {
     return <div className="App">Loading...</div>;
   }
 
@@ -141,7 +129,7 @@ function App() {
               value={selectedGame} 
               onChange={(e) => setSelectedGame(e.target.value)}
             >
-              <option value="main">Default Game (main)</option>
+              <option value="">Select a game to play</option>
               {games.map(game => (
                 <option key={game.branch} value={game.branch}>
                   {game.game_name} ({game.branch})
@@ -186,7 +174,13 @@ function App() {
           </div>
         </div>
         
-        <SudokuBoard board={board} />
+        {selectedGame ? (
+          <SudokuBoard board={board} />
+        ) : (
+          <div className="no-game-selected">
+            <p>Please select a game or create a new one to start playing!</p>
+          </div>
+        )}
       </main>
     </div>
   );

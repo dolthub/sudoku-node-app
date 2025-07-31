@@ -108,29 +108,6 @@ app.get('/api/games', async (req, res) => {
   }
 });
 
-// Legacy endpoint for backward compatibility
-app.get('/api/board/:branch', async (req, res) => {
-  try {
-    const branch = req.params.branch;
-    const gameBoard = await db.getGameBoard(branch);
-    
-    if (!gameBoard) {
-      return res.status(404).json({ 
-        error: 'No game found for this branch',
-        branch: branch
-      });
-    }
-    
-    // Return in old format for compatibility
-    res.json({
-      branch: branch,
-      board: gameBoard.board
-    });
-  } catch (error) {
-    console.error('Error fetching board:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
