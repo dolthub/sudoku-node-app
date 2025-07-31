@@ -103,6 +103,33 @@ function App() {
     }
   };
 
+  const handleCellUpdate = async (row: number, col: number, value: number) => {
+    if (!selectedGame) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/games/${selectedGame}/cell`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ row, col, value }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update cell: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Cell updated:', result);
+
+      // Refresh the board to show the updated state
+      await fetchBoard(selectedGame);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update cell');
+      throw err; // Re-throw so the component can handle the error state
+    }
+  };
+
   if (loading && selectedGame) {
     return <div className="App">Loading...</div>;
   }
@@ -175,7 +202,11 @@ function App() {
         </div>
         
         {selectedGame ? (
-          <SudokuBoard board={board} />
+          <SudokuBoard 
+            board={board} 
+            branch={selectedGame}
+            onCellUpdate={handleCellUpdate}
+          />
         ) : (
           <div className="no-game-selected">
             <p>Please select a game or create a new one to start playing!</p>

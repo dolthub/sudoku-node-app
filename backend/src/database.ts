@@ -224,6 +224,14 @@ class Database {
         );
         console.log(`Set cell (${row}, ${col}) = ${value} in branch: ${branch}`);
       }
+      
+      // Commit the move to the branch
+      const moveDescription = value === 0 ? `Clear cell (${row}, ${col})` : `Set cell (${row}, ${col}) = ${value}`;
+      await pool.execute(
+        'CALL DOLT_COMMIT("-Am", ?)',
+        [moveDescription]
+      );
+      console.log(`Committed move: ${moveDescription}`);
     } catch (error) {
       console.error('Error updating game cell:', error);
       throw error;
