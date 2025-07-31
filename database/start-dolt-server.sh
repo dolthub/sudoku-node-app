@@ -23,10 +23,15 @@ fi
 echo "Setting up database schema..."
 dolt sql < ../init-schema.sql
 
-# Add and commit initial data
-echo "Committing initial data..."
+# Add and commit initial data if there are changes
+echo "Checking for changes to commit..."
 dolt add .
-dolt commit -m "Initial sudoku boards setup"
+if [ "$(dolt sql -q "SELECT COUNT(*) FROM dolt_status" -r csv | tail -n 1)" != "0" ]; then
+    echo "Committing initial data..."
+    dolt commit -m "Initial sudoku boards setup"
+else
+    echo "No changes to commit - data already exists"
+fi
 
 # Start the SQL server
 echo "Starting Dolt SQL server on port 3306..."
