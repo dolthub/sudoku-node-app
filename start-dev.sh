@@ -23,13 +23,16 @@ start_service() {
     local name=$1
     local command=$2
     local directory=$3
+    local log_file="logs/${name// /-}.log"
     
     echo "🚀 Starting $name..."
+    echo "   Logging to: $log_file"
+    
     if [ -n "$directory" ]; then
         # Use subshell to avoid changing current directory
-        (cd "$directory" && eval "$command") &
+        (cd "$directory" && eval "$command") > "$log_file" 2>&1 &
     else
-        eval "$command" &
+        eval "$command" > "$log_file" 2>&1 &
     fi
     
     local pid=$!
@@ -58,8 +61,9 @@ cleanup() {
 # Set up signal handling
 trap cleanup EXIT INT TERM
 
-# Clear any existing PID file
+# Clear any existing PID file and create logs directory
 rm -f /tmp/sudoku_pids.txt
+mkdir -p logs
 
 # Check if required ports are available
 check_port 3306 || echo "   (Dolt SQL server port - will attempt to start anyway)"
@@ -96,6 +100,16 @@ echo "   Frontend: http://localhost:3000"
 echo "   Backend:  http://localhost:3001"
 echo "   Health:   http://localhost:3001/health"
 echo "   Database: localhost:3306 (Dolt SQL)"
+echo ""
+echo "📋 Log Files:"
+echo "   Dolt SQL Server: logs/Dolt-SQL-Server.log"
+echo "   Backend Server:  logs/Backend-Server.log"
+echo "   Frontend Server: logs/Frontend-Server.log"
+echo ""
+echo "💡 To monitor logs in real-time:"
+echo "   tail -f logs/Backend-Server.log"
+echo "   tail -f logs/Frontend-Server.log"
+echo "   tail -f logs/Dolt-SQL-Server.log"
 echo ""
 echo "Press Ctrl+C to stop all services"
 echo ""
