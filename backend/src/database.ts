@@ -3,6 +3,7 @@ import mysql from 'mysql2/promise';
 export interface GameBoard {
   branch: string;
   board: number[][];
+  errors: boolean[][];
 }
 
 export interface GameInfo {
@@ -173,6 +174,7 @@ class Database {
       
       const pool = branch === 'main' ? this.mainPool : this.getBranchPool(branch);
       
+      // Get current board state
       const [rows] = await pool.execute(
         'SELECT row_num, col_num, value FROM sudoku_cells ORDER BY row_num, col_num'
       );
@@ -185,18 +187,39 @@ class Database {
         return null;
       }
 
-      // Convert relational data back to 2D array
-      const board: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+      // Find cells that don't match the solution using JOIN
+      const [errorRows] = await pool.execute(`
+        SELECT c.row_num, c.col_num 
+        FROM sudoku_cells c
+        JOIN sudoku_solution s ON c.row_num = s.row_num AND c.col_num = s.col_num
+        WHERE c.value != s.value
+      `);
       
+      const errorCells = errorRows as any[];
+      console.log(`Found ${errorCells.length} error cells in branch: ${branch}`);
+
+      // Convert relational data back to 2D arrays
+      const board: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+      const errors: boolean[][] = Array.from({ length: 9 }, () => Array(9).fill(false));
+      
+      // Build current board
       for (const cell of cells) {
         const row = cell.row_num - 1; // Convert to 0-based index
         const col = cell.col_num - 1; // Convert to 0-based index
         board[row][col] = cell.value; // Non-null value (1-9)
       }
       
+      // Mark error cells
+      for (const errorCell of errorCells) {
+        const row = errorCell.row_num - 1; // Convert to 0-based index
+        const col = errorCell.col_num - 1; // Convert to 0-based index
+        errors[row][col] = true;
+      }
+      
       return {
         branch,
-        board
+        board,
+        errors
       };
     } catch (error) {
       console.error('Error fetching game board:', error);

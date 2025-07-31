@@ -12,12 +12,15 @@ interface GameBoardData {
   branch: string;
   game_name: string;
   board: number[][];
+  errors: boolean[][];
   initial_board: number[][];
   created_at: string;
 }
 
 function App() {
   const [board, setBoard] = useState<number[][]>([]);
+  const [errors, setErrors] = useState<boolean[][]>([]);
+  const [showErrors, setShowErrors] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [games, setGames] = useState<GameInfo[]>([]);
@@ -63,9 +66,11 @@ function App() {
       
       const data: GameBoardData = await response.json();
       setBoard(data.board);
+      setErrors(data.errors);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load board');
       setBoard([]);
+      setErrors([]);
     } finally {
       setLoading(false);
     }
@@ -165,6 +170,19 @@ function App() {
             </select>
           </div>
           
+          {selectedGame && (
+            <div className="error-toggle">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showErrors}
+                  onChange={(e) => setShowErrors(e.target.checked)}
+                />
+                Show Errors
+              </label>
+            </div>
+          )}
+          
           <div className="create-game-section">
             {!showCreateGame ? (
               <button 
@@ -204,6 +222,8 @@ function App() {
         {selectedGame ? (
           <SudokuBoard 
             board={board} 
+            errors={errors}
+            showErrors={showErrors}
             branch={selectedGame}
             onCellUpdate={handleCellUpdate}
           />

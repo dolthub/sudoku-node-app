@@ -3,11 +3,13 @@ import './SudokuBoard.css';
 
 interface SudokuBoardProps {
   board: number[][];
+  errors: boolean[][];
+  showErrors: boolean;
   branch: string;
   onCellUpdate: (row: number, col: number, value: number) => Promise<void>;
 }
 
-const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, branch, onCellUpdate }) => {
+const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, branch, onCellUpdate }) => {
   const [selectedCell, setSelectedCell] = useState<{row: number, col: number} | null>(null);
   const [updating, setUpdating] = useState(false);
 
@@ -106,6 +108,10 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, branch, onCellUpdate }
               } ${
                 selectedCell?.row === rowIndex && selectedCell?.col === colIndex
                   ? 'selected'
+                  : ''
+              } ${
+                showErrors && errors.length > 0 && errors[rowIndex]?.[colIndex]
+                  ? 'error'
                   : ''
               }`}
               onClick={() => handleCellClick(rowIndex, colIndex)}

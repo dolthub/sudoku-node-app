@@ -54,6 +54,18 @@
   box-shadow: inset 0 0 0 2px #0056b3;
 }
 
+.sudoku-cell.error {
+  background-color: #ffebee !important;
+  color: #d32f2f;
+  border: 2px solid #f44336 !important;
+}
+
+.sudoku-cell.error.selected {
+  background-color: #c62828 !important;
+  color: white;
+  box-shadow: inset 0 0 0 2px #b71c1c;
+}
+
 .updating-indicator {
   position: absolute;
   top: 2px;

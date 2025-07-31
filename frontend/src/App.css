@@ -147,3 +147,24 @@ main {
 .create-game-form button:last-of-type:hover {
   background-color: #545b62;
 }
+
+.error-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-toggle label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 500;
+  color: #333;
+}
+
+.error-toggle input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
