@@ -66,7 +66,7 @@ function App() {
       
       const data: GameBoardData = await response.json();
       setBoard(data.board);
-      setErrors(data.errors);
+      setErrors(data.errors || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load board');
       setBoard([]);

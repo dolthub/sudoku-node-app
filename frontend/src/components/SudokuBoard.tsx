@@ -110,7 +110,7 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
                   ? 'selected'
                   : ''
               } ${
-                showErrors && errors.length > 0 && errors[rowIndex]?.[colIndex]
+                showErrors && errors && errors.length > 0 && errors[rowIndex]?.[colIndex]
                   ? 'error'
                   : ''
               }`}

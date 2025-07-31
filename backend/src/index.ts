@@ -51,7 +51,8 @@ app.get('/api/games/:branch/board', async (req, res) => {
     
     res.json({
       branch,
-      board: gameBoard.board
+      board: gameBoard.board,
+      errors: gameBoard.errors
     });
   } catch (error) {
     console.error('Error fetching game board:', error);

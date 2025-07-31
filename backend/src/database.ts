@@ -184,7 +184,12 @@ class Database {
       
       if (cells.length === 0) {
         console.log(`No cells found in branch: ${branch}`);
-        return null;
+        // Return empty board with empty errors array instead of null
+        return {
+          branch,
+          board: Array.from({ length: 9 }, () => Array(9).fill(0)),
+          errors: Array.from({ length: 9 }, () => Array(9).fill(false))
+        };
       }
 
       // Find cells that don't match the solution using JOIN
