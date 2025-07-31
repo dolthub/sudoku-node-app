@@ -26,11 +26,12 @@ start_service() {
     
     echo "🚀 Starting $name..."
     if [ -n "$directory" ]; then
-        cd "$directory"
+        # Use subshell to avoid changing current directory
+        (cd "$directory" && eval "$command") &
+    else
+        eval "$command" &
     fi
     
-    # Start the service in background and capture PID
-    eval "$command" &
     local pid=$!
     echo "   Started $name with PID $pid"
     echo $pid >> /tmp/sudoku_pids.txt
