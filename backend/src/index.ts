@@ -18,15 +18,34 @@ app.get('/health', (req, res) => {
 });
 
 // Get sudoku board for a specific branch
-app.get('/api/board/:branch?', async (req, res) => {
+app.get('/api/board/:branch', async (req, res) => {
   try {
-    const branch = req.params.branch || 'main';
+    const branch = req.params.branch;
     const board = await db.getSudokuBoard(branch);
     
     if (!board) {
       return res.status(404).json({ 
         error: 'No board found for this branch',
         branch: branch
+      });
+    }
+    
+    res.json(board);
+  } catch (error) {
+    console.error('Error fetching board:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get sudoku board for default branch (main)
+app.get('/api/board', async (req, res) => {
+  try {
+    const board = await db.getSudokuBoard('main');
+    
+    if (!board) {
+      return res.status(404).json({ 
+        error: 'No board found for this branch',
+        branch: 'main'
       });
     }
     
