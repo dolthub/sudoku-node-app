@@ -19,14 +19,14 @@ Dolt SQL Server (Port 3306)
 
 - **Branch-based game selection**: Each game corresponds to a different branch in the Dolt database
 - **Connection pooling**: MySQL2 connection pool for efficient database connections
-- **Fallback handling**: Sample data when database is unavailable
+- **Versioned data storage**: Leverages Dolt's branch-based version control for game data
 - **Real-time board display**: Interactive Sudoku board with visual styling
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- Dolt (optional - application will work with fallback data if not available)
+- Dolt (required - install from https://github.com/dolthub/dolt)
 
 ### Installation & Running
 

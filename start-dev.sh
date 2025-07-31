@@ -68,15 +68,17 @@ check_port 3000 || { echo "   Frontend port occupied. Please free port 3000"; ex
 
 echo ""
 echo "📊 1. Starting Dolt SQL Server..."
-echo "   Note: This requires Dolt to be installed and available in PATH"
-echo "   If Dolt is not available, the backend will fall back to sample data"
 
-# Try to start Dolt server (this might fail if Dolt is not installed)
-if command -v dolt >/dev/null 2>&1; then
-    start_service "Dolt SQL Server" "./database/start-dolt-server.sh" "$(pwd)"
-else
-    echo "   ⚠️  Dolt not found - backend will use fallback sample data"
+# Check if Dolt is installed (required for this demo)
+if ! command -v dolt >/dev/null 2>&1; then
+    echo "   ❌ ERROR: Dolt is required for this demo but not found in PATH"
+    echo "   Please install Dolt from: https://github.com/dolthub/dolt"
+    echo "   Installation instructions: https://docs.dolthub.com/introduction/installation"
+    exit 1
 fi
+
+echo "   ✅ Dolt found - starting SQL server..."
+start_service "Dolt SQL Server" "./database/start-dolt-server.sh" "$(pwd)"
 
 echo ""
 echo "🔧 2. Starting Backend Server..."
@@ -93,9 +95,7 @@ echo "🌐 Application URLs:"
 echo "   Frontend: http://localhost:3000"
 echo "   Backend:  http://localhost:3001"
 echo "   Health:   http://localhost:3001/health"
-if command -v dolt >/dev/null 2>&1; then
-    echo "   Database: localhost:3306 (Dolt SQL)"
-fi
+echo "   Database: localhost:3306 (Dolt SQL)"
 echo ""
 echo "Press Ctrl+C to stop all services"
 echo ""
