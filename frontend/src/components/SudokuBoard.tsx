@@ -11,6 +11,23 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, branch, onCellUpdate }
   const [selectedCell, setSelectedCell] = useState<{row: number, col: number} | null>(null);
   const [updating, setUpdating] = useState(false);
 
+  // Initialize selection to first empty cell (upper-left)
+  useEffect(() => {
+    if (board.length === 9 && !selectedCell) {
+      // Find the first empty cell (upper-left most)
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            setSelectedCell({ row, col });
+            return;
+          }
+        }
+      }
+      // If no empty cells, select (0,0)
+      setSelectedCell({ row: 0, col: 0 });
+    }
+  }, [board, selectedCell]);
+
   useEffect(() => {
     const handleKeyPress = async (event: KeyboardEvent) => {
       if (!selectedCell || updating) return;
@@ -18,6 +35,7 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, branch, onCellUpdate }
       const key = event.key;
       let value: number | null = null;
 
+      // Handle number input
       if (key >= '0' && key <= '9') {
         value = parseInt(key);
       } else if (key === 'Backspace' || key === 'Delete') {
@@ -26,11 +44,38 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, branch, onCellUpdate }
         setSelectedCell(null);
         return;
       }
+      // Handle arrow key navigation
+      else if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+        event.preventDefault(); // Prevent page scrolling
+        
+        let newRow = selectedCell.row;
+        let newCol = selectedCell.col;
+        
+        switch (key) {
+          case 'ArrowUp':
+            newRow = Math.max(0, selectedCell.row - 1);
+            break;
+          case 'ArrowDown':
+            newRow = Math.min(8, selectedCell.row + 1);
+            break;
+          case 'ArrowLeft':
+            newCol = Math.max(0, selectedCell.col - 1);
+            break;
+          case 'ArrowRight':
+            newCol = Math.min(8, selectedCell.col + 1);
+            break;
+        }
+        
+        setSelectedCell({ row: newRow, col: newCol });
+        return;
+      }
 
+      // Handle cell value updates
       if (value !== null) {
         try {
           setUpdating(true);
           await onCellUpdate(selectedCell.row + 1, selectedCell.col + 1, value);
+          // Keep the same cell selected after update
         } catch (error) {
           console.error('Failed to update cell:', error);
         } finally {
