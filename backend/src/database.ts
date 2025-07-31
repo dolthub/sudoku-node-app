@@ -1,8 +1,4 @@
 import mysql from 'mysql2/promise';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 export interface GameBoard {
   id: number;
@@ -44,19 +40,10 @@ class Database {
       // Generate unique branch name
       const branchName = `game_${gameName}_${Date.now()}`;
       
-      // Create Dolt branch using dolt command
-      const doltDataPath = process.cwd() + '/database/dolt-data';
-      console.log(`Creating branch ${branchName} in ${doltDataPath}`);
-      
-      const { stdout, stderr } = await execAsync(
-        `cd "${doltDataPath}" && dolt branch ${branchName}`,
-        { timeout: 30000 }
-      );
-      
-      if (stderr) {
-        console.warn('Dolt branch creation warning:', stderr);
-      }
-      console.log('Dolt branch creation output:', stdout);
+      // Create Dolt branch using SQL
+      console.log(`Creating branch ${branchName} using DOLT_BRANCH()`);
+      await this.mainPool.execute('CALL DOLT_BRANCH(?)', [branchName]);
+      console.log(`Branch ${branchName} created successfully`);
       
       // Create connection pool for the new branch
       const branchPool = mysql.createPool({
