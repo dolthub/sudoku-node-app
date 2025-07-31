@@ -59,6 +59,20 @@ class Database {
       
       this.branchPools.set(branchName, branchPool);
       
+      // Initialize table structure in the new branch
+      console.log(`Initializing table structure in branch ${branchName}`);
+      await branchPool.execute(`
+        CREATE TABLE game_board (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          game_name VARCHAR(255) NOT NULL,
+          board_state JSON NOT NULL,
+          initial_board JSON NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_game (game_name)
+        )
+      `);
+      
       // Generate a random Sudoku puzzle for the new game
       const initialBoard = this.generateSudokuPuzzle();
       
@@ -66,6 +80,13 @@ class Database {
       await branchPool.execute(
         'INSERT INTO game_board (game_name, board_state, initial_board) VALUES (?, ?, ?)',
         [gameName, JSON.stringify(initialBoard), JSON.stringify(initialBoard)]
+      );
+      
+      // Commit the changes to the branch
+      console.log(`Committing initial game setup to branch ${branchName}`);
+      await branchPool.execute(
+        'CALL DOLT_COMMIT("-m", ?)',
+        [`Initial setup for game: ${gameName}`]
       );
       
       console.log(`Game ${gameName} created successfully on branch ${branchName}`);
