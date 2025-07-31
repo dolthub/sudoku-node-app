@@ -1,17 +1,13 @@
 import mysql from 'mysql2/promise';
 
 export interface GameBoard {
-  id: number;
-  game_name: string;
-  board_state: number[][];
-  initial_board: number[][];
-  created_at: Date;
+  branch: string;
+  board: number[][];
 }
 
 export interface GameInfo {
   branch: string;
   game_name: string;
-  created_at: Date;
 }
 
 class Database {
@@ -62,25 +58,43 @@ class Database {
       // Initialize table structure in the new branch
       console.log(`Initializing table structure in branch ${branchName}`);
       await branchPool.execute(`
-        CREATE TABLE game_board (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          game_name VARCHAR(255) NOT NULL,
-          board_state JSON NOT NULL,
-          initial_board JSON NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          UNIQUE KEY unique_game (game_name)
+        CREATE TABLE sudoku_cells (
+          row_num INT NOT NULL,
+          col_num INT NOT NULL,
+          value INT NOT NULL,
+          PRIMARY KEY (row_num, col_num),
+          CHECK (row_num >= 1 AND row_num <= 9),
+          CHECK (col_num >= 1 AND col_num <= 9),
+          CHECK (value >= 1 AND value <= 9)
         )
       `);
       
       // Generate a random Sudoku puzzle for the new game
       const initialBoard = this.generateSudokuPuzzle();
       
-      // Insert game data into the branch
-      await branchPool.execute(
-        'INSERT INTO game_board (game_name, board_state, initial_board) VALUES (?, ?, ?)',
-        [gameName, JSON.stringify(initialBoard), JSON.stringify(initialBoard)]
-      );
+      // Insert game data into the branch (only filled cells)
+      console.log(`Inserting initial puzzle data for ${gameName}`);
+      const cellsToInsert: [number, number, number][] = [];
+      
+      for (let row = 1; row <= 9; row++) {
+        for (let col = 1; col <= 9; col++) {
+          const value = initialBoard[row - 1][col - 1];
+          if (value !== 0) {
+            cellsToInsert.push([row, col, value]);
+          }
+        }
+      }
+      
+      if (cellsToInsert.length > 0) {
+        const placeholders = cellsToInsert.map(() => '(?, ?, ?)').join(', ');
+        const values = cellsToInsert.flat();
+        
+        await branchPool.execute(
+          `INSERT INTO sudoku_cells (row_num, col_num, value) VALUES ${placeholders}`,
+          values
+        );
+        console.log(`Inserted ${cellsToInsert.length} filled cells in single query`);
+      }
       
       // Commit the changes to the branch
       console.log(`Committing initial game setup to branch ${branchName}`);
@@ -127,25 +141,29 @@ class Database {
       const pool = branch === 'main' ? this.mainPool : this.getBranchPool(branch);
       
       const [rows] = await pool.execute(
-        'SELECT * FROM game_board ORDER BY created_at DESC LIMIT 1'
+        'SELECT row_num, col_num, value FROM sudoku_cells ORDER BY row_num, col_num'
       );
       
-      const boards = rows as any[];
-      console.log(`Found ${boards.length} boards in branch: ${branch}`);
+      const cells = rows as any[];
+      console.log(`Found ${cells.length} cells in branch: ${branch}`);
       
-      if (boards.length === 0) {
-        console.log(`No board found in branch: ${branch}`);
+      if (cells.length === 0) {
+        console.log(`No cells found in branch: ${branch}`);
         return null;
       }
 
-      const board = boards[0];
+      // Convert relational data back to 2D array
+      const board: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+      
+      for (const cell of cells) {
+        const row = cell.row_num - 1; // Convert to 0-based index
+        const col = cell.col_num - 1; // Convert to 0-based index
+        board[row][col] = cell.value; // Non-null value (1-9)
+      }
       
       return {
-        id: board.id,
-        game_name: board.game_name,
-        board_state: typeof board.board_state === 'object' ? board.board_state : JSON.parse(board.board_state),
-        initial_board: typeof board.initial_board === 'object' ? board.initial_board : JSON.parse(board.initial_board),
-        created_at: board.created_at
+        branch,
+        board
       };
     } catch (error) {
       console.error('Error fetching game board:', error);
@@ -153,19 +171,28 @@ class Database {
     }
   }
 
-  // Update game board state
-  async updateGameBoard(branch: string, boardState: number[][]): Promise<void> {
+  // Update a specific cell in the game board
+  async updateGameCell(branch: string, row: number, col: number, value: number): Promise<void> {
     try {
       const pool = branch === 'main' ? this.mainPool : this.getBranchPool(branch);
       
-      await pool.execute(
-        'UPDATE game_board SET board_state = ?, updated_at = CURRENT_TIMESTAMP ORDER BY created_at DESC LIMIT 1',
-        [JSON.stringify(boardState)]
-      );
-      
-      console.log(`Game board updated in branch: ${branch}`);
+      if (value === 0) {
+        // Remove the cell if value is 0 (empty)
+        await pool.execute(
+          'DELETE FROM sudoku_cells WHERE row_num = ? AND col_num = ?',
+          [row, col]
+        );
+        console.log(`Cleared cell (${row}, ${col}) in branch: ${branch}`);
+      } else {
+        // Insert or update the cell value
+        await pool.execute(
+          'INSERT INTO sudoku_cells (row_num, col_num, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
+          [row, col, value]
+        );
+        console.log(`Set cell (${row}, ${col}) = ${value} in branch: ${branch}`);
+      }
     } catch (error) {
-      console.error('Error updating game board:', error);
+      console.error('Error updating game cell:', error);
       throw error;
     }
   }
@@ -191,10 +218,13 @@ class Database {
         try {
           const gameBoard = await this.getGameBoard(branch);
           if (gameBoard) {
+            // Extract game name from branch (e.g., "game_MyGame_123456" -> "MyGame")
+            const gameNameMatch = branch.match(/^game_(.+)_\d+$/);
+            const gameName = gameNameMatch ? gameNameMatch[1] : branch;
+            
             games.push({
               branch,
-              game_name: gameBoard.game_name,
-              created_at: gameBoard.created_at
+              game_name: gameName
             });
           }
         } catch (error) {

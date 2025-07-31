@@ -62,25 +62,40 @@ app.get('/api/games/:branch/board', async (req, res) => {
   }
 });
 
-// Update game board state
-app.put('/api/games/:branch/board', async (req, res) => {
+// Update a specific cell in the game board
+app.put('/api/games/:branch/cell', async (req, res) => {
   try {
     const branch = req.params.branch;
-    const { board } = req.body;
+    const { row, col, value } = req.body;
     
-    if (!board || !Array.isArray(board) || board.length !== 9) {
+    if (typeof row !== 'number' || typeof col !== 'number' || typeof value !== 'number') {
       return res.status(400).json({ 
-        error: 'Invalid board data. Expected 9x9 array.' 
+        error: 'Invalid data. Expected row, col, and value as numbers.' 
       });
     }
     
-    await db.updateGameBoard(branch, board);
+    if (row < 1 || row > 9 || col < 1 || col > 9) {
+      return res.status(400).json({ 
+        error: 'Row and column must be between 1 and 9.' 
+      });
+    }
+    
+    if (value < 0 || value > 9) {
+      return res.status(400).json({ 
+        error: 'Value must be between 0 (empty) and 9.' 
+      });
+    }
+    
+    await db.updateGameCell(branch, row, col, value);
     res.json({ 
       branch,
-      message: 'Game board updated successfully' 
+      row,
+      col,
+      value,
+      message: 'Cell updated successfully' 
     });
   } catch (error) {
-    console.error('Error updating game board:', error);
+    console.error('Error updating game cell:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
