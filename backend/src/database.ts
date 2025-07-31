@@ -85,7 +85,7 @@ class Database {
       // Commit the changes to the branch
       console.log(`Committing initial game setup to branch ${branchName}`);
       await branchPool.execute(
-        'CALL DOLT_COMMIT("-m", ?)',
+        'CALL DOLT_COMMIT("-Am", ?)',
         [`Initial setup for game: ${gameName}`]
       );
       
