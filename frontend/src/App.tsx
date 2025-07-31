@@ -28,6 +28,7 @@ function App() {
   const [showCreateGame, setShowCreateGame] = useState(false);
   const [newGameName, setNewGameName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [gameCompleted, setGameCompleted] = useState(false);
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -38,6 +39,7 @@ function App() {
   useEffect(() => {
     if (selectedGame) {
       fetchBoard(selectedGame);
+      setGameCompleted(false); // Reset completion state when switching games
     }
   }, [selectedGame]);
 
@@ -127,6 +129,11 @@ function App() {
       const result = await response.json();
       console.log('Cell updated:', result);
 
+      // Check if game is completed
+      if (result.isComplete) {
+        setGameCompleted(true);
+      }
+
       // Refresh the board to show the updated state
       await fetchBoard(selectedGame);
     } catch (err) {
@@ -150,6 +157,14 @@ function App() {
           <div className="error-message">
             <p>⚠️ {error}</p>
             <p>Showing sample board instead</p>
+          </div>
+        )}
+        
+        {gameCompleted && (
+          <div className="completion-message">
+            <h2>🎉 Congratulations!</h2>
+            <p>You've successfully completed the Sudoku puzzle!</p>
+            <p>All cells are filled correctly. Well done! 🎊</p>
           </div>
         )}
         

@@ -84,13 +84,14 @@ app.put('/api/games/:branch/cell', async (req, res) => {
       });
     }
     
-    await db.updateGameCell(branch, row, col, value);
+    const result = await db.updateGameCell(branch, row, col, value);
     res.json({ 
       branch,
       row,
       col,
       value,
-      message: 'Cell updated successfully' 
+      isComplete: result.isComplete,
+      message: result.isComplete ? 'Congratulations! Game completed!' : 'Cell updated successfully' 
     });
   } catch (error) {
     console.error('Error updating game cell:', error);

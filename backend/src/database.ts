@@ -233,7 +233,7 @@ class Database {
   }
 
   // Update a specific cell in the game board
-  async updateGameCell(branch: string, row: number, col: number, value: number): Promise<void> {
+  async updateGameCell(branch: string, row: number, col: number, value: number): Promise<{ isComplete: boolean }> {
     try {
       const pool = branch === 'main' ? this.mainPool : this.getBranchPool(branch);
       
@@ -253,13 +253,38 @@ class Database {
         console.log(`Set cell (${row}, ${col}) = ${value} in branch: ${branch}`);
       }
       
+      // Check if the game is complete (81 cells filled and no errors)
+      const [cellCountResult] = await pool.execute('SELECT COUNT(*) as count FROM sudoku_cells');
+      const cellCount = (cellCountResult as any[])[0].count;
+      
+      let isComplete = false;
+      if (cellCount === 81) {
+        // Check if there are any errors
+        const [errorRows] = await pool.execute(`
+          SELECT COUNT(*) as error_count
+          FROM sudoku_cells c
+          JOIN sudoku_solution s ON c.row_num = s.row_num AND c.col_num = s.col_num
+          WHERE c.value != s.value
+        `);
+        
+        const errorCount = (errorRows as any[])[0].error_count;
+        isComplete = errorCount === 0;
+        
+        if (isComplete) {
+          console.log(`🎉 Game completed on branch: ${branch}!`);
+        }
+      }
+      
       // Commit the move to the branch
       const moveDescription = value === 0 ? `Clear cell (${row}, ${col})` : `Set cell (${row}, ${col}) = ${value}`;
+      const commitMessage = isComplete ? `${moveDescription} - GAME COMPLETED! 🎉` : moveDescription;
       await pool.execute(
         'CALL DOLT_COMMIT("-Am", ?)',
-        [moveDescription]
+        [commitMessage]
       );
-      console.log(`Committed move: ${moveDescription}`);
+      console.log(`Committed move: ${commitMessage}`);
+      
+      return { isComplete };
     } catch (error) {
       console.error('Error updating game cell:', error);
       throw error;
