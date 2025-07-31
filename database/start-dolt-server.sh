@@ -7,7 +7,8 @@ set -e
 
 echo "Starting Dolt SQL server for Sudoku game..."
 
-# Change to database directory
+# Create and change to database directory
+mkdir -p "$(dirname "$0")/dolt-data"
 cd "$(dirname "$0")/dolt-data"
 
 # Initialize Dolt repo if it doesn't exist
