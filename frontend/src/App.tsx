@@ -189,7 +189,7 @@ function App() {
               <option value="">Select a game to play</option>
               {games.map(game => (
                 <option key={game.branch} value={game.branch}>
-                  {game.game_name} ({game.branch})
+                  {game.game_name}
                 </option>
               ))}
             </select>
@@ -230,9 +230,9 @@ function App() {
                   onChange={(e) => setNewGameDifficulty(e.target.value)}
                   className="difficulty-select"
                 >
-                  <option value="easy">Easy (30-35 empty)</option>
-                  <option value="medium">Medium (40-45 empty)</option>
-                  <option value="hard">Hard (50-55 empty)</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
                 </select>
                 <button 
                   onClick={createGame}
