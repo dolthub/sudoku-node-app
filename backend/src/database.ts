@@ -30,7 +30,7 @@ class Database {
   }
 
   // Create a new game by creating a Dolt branch
-  async createGame(gameName: string): Promise<{ branch: string; message: string }> {
+  async createGame(gameName: string, difficulty: string = 'medium'): Promise<{ branch: string; message: string }> {
     try {
       console.log(`Creating new game: ${gameName}`);
       
@@ -84,7 +84,7 @@ class Database {
       `);
       
       // Generate a legitimate Sudoku puzzle and solution
-      const { solution, puzzle } = this.generateSudokuPuzzle();
+      const { solution, puzzle } = this.generateSudokuPuzzle(difficulty);
       
       // Insert solution data (all 81 cells)
       console.log(`Inserting solution data for ${gameName}`);
@@ -358,7 +358,7 @@ class Database {
   }
 
   // Generate a legitimate Sudoku puzzle and solution
-  private generateSudokuPuzzle(): { solution: number[][], puzzle: number[][] } {
+  private generateSudokuPuzzle(difficulty: string = 'medium', maxAttempts: number = 50): { solution: number[][], puzzle: number[][] } {
     // Start with a base valid Sudoku pattern
     const baseSolution: number[][] = [
       [1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -378,8 +378,22 @@ class Database {
     // Create puzzle by removing cells from the solution
     const puzzle: number[][] = solution.map(row => [...row]); // Deep copy
     
-    // Remove 40-50 cells to create a proper puzzle difficulty
-    const cellsToRemove = 40 + Math.floor(Math.random() * 11); // 40-50 cells
+    // Determine number of cells to remove based on difficulty
+    let cellsToRemove: number;
+    switch (difficulty) {
+      case 'easy':
+        cellsToRemove = 30 + Math.floor(Math.random() * 6); // 30-35 cells
+        break;
+      case 'medium':
+        cellsToRemove = 40 + Math.floor(Math.random() * 6); // 40-45 cells
+        break;
+      case 'hard':
+        cellsToRemove = 50 + Math.floor(Math.random() * 6); // 50-55 cells
+        break;
+      default:
+        cellsToRemove = 40 + Math.floor(Math.random() * 6); // default to medium
+    }
+    
     const removedPositions = new Set<string>();
     
     while (removedPositions.size < cellsToRemove) {
@@ -393,8 +407,83 @@ class Database {
       }
     }
     
-    console.log(`Generated puzzle with ${cellsToRemove} empty cells`);
+    // Validate that the puzzle has exactly one solution
+    if (!this.hasUniqueSolution(puzzle)) {
+      if (maxAttempts > 1) {
+        console.log(`Generated puzzle has multiple solutions, regenerating... (${maxAttempts - 1} attempts left)`);
+        // Recursively try again until we get a unique solution
+        return this.generateSudokuPuzzle(difficulty, maxAttempts - 1);
+      } else {
+        console.warn('Could not generate puzzle with unique solution after maximum attempts, using current puzzle');
+        // Fallback: return the puzzle anyway (better than infinite loop)
+      }
+    }
+    
+    console.log(`Generated ${difficulty} puzzle with ${cellsToRemove} empty cells`);
     return { solution, puzzle };
+  }
+
+  // Check if a Sudoku puzzle has exactly one unique solution
+  private hasUniqueSolution(puzzle: number[][]): boolean {
+    const puzzleCopy = puzzle.map(row => [...row]);
+    let solutionCount = 0;
+    
+    const solve = (board: number[][]): boolean => {
+      if (solutionCount > 1) return false; // Early exit if multiple solutions found
+      
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            for (let num = 1; num <= 9; num++) {
+              if (this.isValidMove(board, row, col, num)) {
+                board[row][col] = num;
+                
+                if (solve(board)) {
+                  solutionCount++;
+                  if (solutionCount > 1) {
+                    board[row][col] = 0; // backtrack
+                    return false; // Multiple solutions found
+                  }
+                }
+                
+                board[row][col] = 0; // backtrack
+              }
+            }
+            return false; // No valid number found for this cell
+          }
+        }
+      }
+      
+      return true; // Found a complete solution
+    };
+    
+    solve(puzzleCopy);
+    return solutionCount === 1;
+  }
+
+  // Check if placing a number at a position is valid
+  private isValidMove(board: number[][], row: number, col: number, num: number): boolean {
+    // Check row
+    for (let x = 0; x < 9; x++) {
+      if (board[row][x] === num) return false;
+    }
+    
+    // Check column
+    for (let x = 0; x < 9; x++) {
+      if (board[x][col] === num) return false;
+    }
+    
+    // Check 3x3 box
+    const boxRow = Math.floor(row / 3) * 3;
+    const boxCol = Math.floor(col / 3) * 3;
+    
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if (board[boxRow + i][boxCol + j] === num) return false;
+      }
+    }
+    
+    return true;
   }
 
   // Shuffle a Sudoku board using valid mathematical transformations

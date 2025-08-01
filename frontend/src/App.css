@@ -159,6 +159,27 @@ main {
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
+.difficulty-select {
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  min-width: 150px;
+}
+
+.difficulty-select:hover {
+  border-color: #007bff;
+}
+
+.difficulty-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
 .create-game-form button {
   padding: 8px 16px;
   border: none;

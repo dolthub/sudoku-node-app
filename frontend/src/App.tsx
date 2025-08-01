@@ -27,6 +27,7 @@ function App() {
   const [selectedGame, setSelectedGame] = useState<string>('');
   const [showCreateGame, setShowCreateGame] = useState(false);
   const [newGameName, setNewGameName] = useState('');
+  const [newGameDifficulty, setNewGameDifficulty] = useState('medium');
   const [creating, setCreating] = useState(false);
   const [gameCompleted, setGameCompleted] = useState(false);
 
@@ -93,7 +94,10 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ gameName: newGameName.trim() }),
+        body: JSON.stringify({ 
+          gameName: newGameName.trim(),
+          difficulty: newGameDifficulty 
+        }),
       });
       
       if (!response.ok) {
@@ -107,6 +111,7 @@ function App() {
       await fetchGames();
       setSelectedGame(result.branch);
       setNewGameName('');
+      setNewGameDifficulty('medium');
       setShowCreateGame(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create game');
@@ -220,6 +225,15 @@ function App() {
                   onChange={(e) => setNewGameName(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && createGame()}
                 />
+                <select
+                  value={newGameDifficulty}
+                  onChange={(e) => setNewGameDifficulty(e.target.value)}
+                  className="difficulty-select"
+                >
+                  <option value="easy">Easy (30-35 empty)</option>
+                  <option value="medium">Medium (40-45 empty)</option>
+                  <option value="hard">Hard (50-55 empty)</option>
+                </select>
                 <button 
                   onClick={createGame}
                   disabled={creating || !newGameName.trim()}
@@ -230,6 +244,7 @@ function App() {
                   onClick={() => {
                     setShowCreateGame(false);
                     setNewGameName('');
+                    setNewGameDifficulty('medium');
                   }}
                 >
                   Cancel

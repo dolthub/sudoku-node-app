@@ -20,7 +20,7 @@ app.get('/health', (req, res) => {
 // Create a new game (creates Dolt branch)
 app.post('/api/games', async (req, res) => {
   try {
-    const { gameName } = req.body;
+    const { gameName, difficulty = 'medium' } = req.body;
     
     if (!gameName || typeof gameName !== 'string' || gameName.trim().length === 0) {
       return res.status(400).json({ 
@@ -28,7 +28,13 @@ app.post('/api/games', async (req, res) => {
       });
     }
     
-    const result = await db.createGame(gameName.trim());
+    if (!['easy', 'medium', 'hard'].includes(difficulty)) {
+      return res.status(400).json({ 
+        error: 'Difficulty must be easy, medium, or hard' 
+      });
+    }
+    
+    const result = await db.createGame(gameName.trim(), difficulty);
     res.status(201).json(result);
   } catch (error) {
     console.error('Error creating game:', error);
