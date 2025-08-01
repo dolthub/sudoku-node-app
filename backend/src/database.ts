@@ -359,21 +359,9 @@ class Database {
 
   // Generate a legitimate Sudoku puzzle and solution
   private generateSudokuPuzzle(difficulty: string = 'medium'): { solution: number[][], puzzle: number[][] } {
-    // Start with a more randomized base valid Sudoku pattern
-    const baseSolution: number[][] = [
-      [5, 3, 4, 6, 7, 8, 9, 1, 2],
-      [6, 7, 2, 1, 9, 5, 3, 4, 8],
-      [1, 9, 8, 3, 4, 2, 5, 6, 7],
-      [8, 5, 9, 7, 6, 1, 4, 2, 3],
-      [4, 2, 6, 8, 5, 3, 7, 9, 1],
-      [7, 1, 3, 9, 2, 4, 8, 5, 6],
-      [9, 6, 1, 5, 3, 7, 2, 8, 4],
-      [2, 8, 7, 4, 1, 9, 6, 3, 5],
-      [3, 4, 5, 2, 8, 6, 1, 7, 9]
-    ];
-    
-    // Apply shuffling transformations to create a unique board
-    const solution = this.shuffleBoard(baseSolution);
+    // Generate a completely random valid Sudoku solution
+    console.log('Generating random Sudoku solution...');
+    const solution = this.generateRandomSudokuSolution();
     
     // Determine target number of cells to remove based on difficulty
     let targetCellsToRemove: number;
@@ -460,6 +448,69 @@ class Database {
     return count;
   }
 
+  // Generate a completely random valid Sudoku solution from scratch
+  private generateRandomSudokuSolution(): number[][] {
+    // Start with empty board  
+    const board: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+    
+    // Fill the board using backtracking with randomization
+    if (this.fillBoardRandomly(board)) {
+      console.log('Successfully generated random Sudoku solution');
+      return board;
+    } else {
+      console.warn('Failed to generate random solution, falling back to base pattern');
+      // Fallback to the fixed pattern if random generation fails
+      return [
+        [5, 3, 4, 6, 7, 8, 9, 1, 2],
+        [6, 7, 2, 1, 9, 5, 3, 4, 8],
+        [1, 9, 8, 3, 4, 2, 5, 6, 7],
+        [8, 5, 9, 7, 6, 1, 4, 2, 3],
+        [4, 2, 6, 8, 5, 3, 7, 9, 1],
+        [7, 1, 3, 9, 2, 4, 8, 5, 6],
+        [9, 6, 1, 5, 3, 7, 2, 8, 4],
+        [2, 8, 7, 4, 1, 9, 6, 3, 5],
+        [3, 4, 5, 2, 8, 6, 1, 7, 9]
+      ];
+    }
+  }
+
+  // Fill board using randomized backtracking
+  private fillBoardRandomly(board: number[][]): boolean {
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        if (board[row][col] === 0) {
+          // Create randomized list of numbers 1-9
+          const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+          
+          // Fisher-Yates shuffle for random order
+          for (let i = numbers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+          }
+          
+          // Try each number in random order
+          for (const num of numbers) {
+            if (this.isValidMove(board, row, col, num)) {
+              board[row][col] = num;
+              
+              // Recursively fill the rest
+              if (this.fillBoardRandomly(board)) {
+                return true;
+              }
+              
+              // Backtrack
+              board[row][col] = 0;
+            }
+          }
+          
+          return false; // No valid number found for this cell
+        }
+      }
+    }
+    
+    return true; // Board is complete
+  }
+
   // Check if a Sudoku puzzle has exactly one unique solution
   private hasUniqueSolution(puzzle: number[][]): boolean {
     const puzzleCopy = puzzle.map(row => [...row]);
@@ -523,134 +574,6 @@ class Database {
     return true;
   }
 
-  // Shuffle a Sudoku board using valid mathematical transformations
-  private shuffleBoard(board: number[][]): number[][] {
-    let shuffled = board.map(row => [...row]); // Deep copy
-    
-    // Perform 10 rounds of shuffling as specified
-    for (let round = 0; round < 10; round++) {
-      // Shuffle rows within each broad row (3x3 blocks)
-      shuffled = this.shuffleRowsInBroadRows(shuffled);
-      
-      // Shuffle columns within each broad column (3x3 blocks)
-      shuffled = this.shuffleColumnsInBroadColumns(shuffled);
-      
-      // Shuffle broad rows (swap entire 3-row blocks)
-      shuffled = this.shuffleBroadRows(shuffled);
-      
-      // Shuffle broad columns (swap entire 3-column blocks)
-      shuffled = this.shuffleBroadColumns(shuffled);
-    }
-    
-    return shuffled;
-  }
-
-  // Shuffle rows within each broad row (rows 0-2, 3-5, 6-8)
-  private shuffleRowsInBroadRows(board: number[][]): number[][] {
-    const result = board.map(row => [...row]);
-    
-    for (let broadRow = 0; broadRow < 3; broadRow++) {
-      const startRow = broadRow * 3;
-      const rows = [
-        result[startRow],
-        result[startRow + 1],
-        result[startRow + 2]
-      ];
-      
-      // Fisher-Yates shuffle
-      for (let i = rows.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [rows[i], rows[j]] = [rows[j], rows[i]];
-      }
-      
-      result[startRow] = rows[0];
-      result[startRow + 1] = rows[1];
-      result[startRow + 2] = rows[2];
-    }
-    
-    return result;
-  }
-
-  // Shuffle columns within each broad column (columns 0-2, 3-5, 6-8)
-  private shuffleColumnsInBroadColumns(board: number[][]): number[][] {
-    const result = board.map(row => [...row]);
-    
-    for (let broadCol = 0; broadCol < 3; broadCol++) {
-      const startCol = broadCol * 3;
-      
-      // Extract the three columns
-      const cols = [
-        result.map(row => row[startCol]),
-        result.map(row => row[startCol + 1]),
-        result.map(row => row[startCol + 2])
-      ];
-      
-      // Fisher-Yates shuffle
-      for (let i = cols.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [cols[i], cols[j]] = [cols[j], cols[i]];
-      }
-      
-      // Put columns back
-      for (let row = 0; row < 9; row++) {
-        result[row][startCol] = cols[0][row];
-        result[row][startCol + 1] = cols[1][row];
-        result[row][startCol + 2] = cols[2][row];
-      }
-    }
-    
-    return result;
-  }
-
-  // Shuffle broad rows (swap entire 3-row blocks)
-  private shuffleBroadRows(board: number[][]): number[][] {
-    const result = [...board];
-    const broadRows = [
-      [result[0], result[1], result[2]],
-      [result[3], result[4], result[5]],
-      [result[6], result[7], result[8]]
-    ];
-    
-    // Fisher-Yates shuffle
-    for (let i = broadRows.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [broadRows[i], broadRows[j]] = [broadRows[j], broadRows[i]];
-    }
-    
-    return [
-      ...broadRows[0],
-      ...broadRows[1],
-      ...broadRows[2]
-    ];
-  }
-
-  // Shuffle broad columns (swap entire 3-column blocks)
-  private shuffleBroadColumns(board: number[][]): number[][] {
-    const result = board.map(row => [...row]);
-    
-    const broadCols = [
-      result.map(row => [row[0], row[1], row[2]]),
-      result.map(row => [row[3], row[4], row[5]]),
-      result.map(row => [row[6], row[7], row[8]])
-    ];
-    
-    // Fisher-Yates shuffle
-    for (let i = broadCols.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [broadCols[i], broadCols[j]] = [broadCols[j], broadCols[i]];
-    }
-    
-    // Reconstruct the board
-    for (let row = 0; row < 9; row++) {
-      result[row] = [
-        ...broadCols[0][row],
-        ...broadCols[1][row],
-        ...broadCols[2][row]
-      ];
-    }
-    
-    return result;
-  }
 }
 
 export default Database;
