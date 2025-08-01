@@ -359,17 +359,17 @@ class Database {
 
   // Generate a legitimate Sudoku puzzle and solution
   private generateSudokuPuzzle(difficulty: string = 'medium'): { solution: number[][], puzzle: number[][] } {
-    // Start with a base valid Sudoku pattern
+    // Start with a more randomized base valid Sudoku pattern
     const baseSolution: number[][] = [
-      [1, 2, 3, 4, 5, 6, 7, 8, 9],
-      [4, 5, 6, 7, 8, 9, 1, 2, 3],
-      [7, 8, 9, 1, 2, 3, 4, 5, 6],
-      [2, 3, 1, 5, 6, 4, 8, 9, 7],
-      [5, 6, 4, 8, 9, 7, 2, 3, 1],
-      [8, 9, 7, 2, 3, 1, 5, 6, 4],
-      [3, 1, 2, 6, 4, 5, 9, 7, 8],
-      [6, 4, 5, 9, 7, 8, 3, 1, 2],
-      [9, 7, 8, 3, 1, 2, 6, 4, 5]
+      [5, 3, 4, 6, 7, 8, 9, 1, 2],
+      [6, 7, 2, 1, 9, 5, 3, 4, 8],
+      [1, 9, 8, 3, 4, 2, 5, 6, 7],
+      [8, 5, 9, 7, 6, 1, 4, 2, 3],
+      [4, 2, 6, 8, 5, 3, 7, 9, 1],
+      [7, 1, 3, 9, 2, 4, 8, 5, 6],
+      [9, 6, 1, 5, 3, 7, 2, 8, 4],
+      [2, 8, 7, 4, 1, 9, 6, 3, 5],
+      [3, 4, 5, 2, 8, 6, 1, 7, 9]
     ];
     
     // Apply shuffling transformations to create a unique board
