@@ -237,37 +237,39 @@ class Database {
     try {
       const pool = branch === 'main' ? this.mainPool : this.getBranchPool(branch);
       
+      // First, check the current value to see if we need to make changes
+      const [currentRows] = await pool.execute(
+        'SELECT value FROM sudoku_cells WHERE row_num = ? AND col_num = ?',
+        [row, col]
+      );
+      
+      const currentCells = currentRows as any[];
+      const currentValue = currentCells.length > 0 ? currentCells[0].value : 0; // 0 means empty
+      
       let changesWereMade = false;
       
-      if (value === 0) {
-        // Remove the cell if value is 0 (empty)
-        const [result] = await pool.execute(
-          'DELETE FROM sudoku_cells WHERE row_num = ? AND col_num = ?',
-          [row, col]
-        );
-        const affectedRows = (result as any).affectedRows;
-        changesWereMade = affectedRows > 0;
-        
-        if (changesWereMade) {
-          console.log(`Cleared cell (${row}, ${col}) in branch: ${branch}`);
-        } else {
-          console.log(`No change - cell (${row}, ${col}) was already empty in branch: ${branch}`);
-        }
+      if (value === currentValue) {
+        // No change needed - the cell already has this value
+        console.log(`No change - cell (${row}, ${col}) already has value ${value === 0 ? 'empty' : value} in branch: ${branch}`);
+        changesWereMade = false;
       } else {
-        // Insert or update the cell value
-        const [result] = await pool.execute(
-          'INSERT INTO sudoku_cells (row_num, col_num, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
-          [row, col, value]
-        );
-        // For INSERT ... ON DUPLICATE KEY UPDATE:
-        // affectedRows = 1 if INSERT, 2 if UPDATE with different value, 0 if UPDATE with same value
-        const affectedRows = (result as any).affectedRows;
-        changesWereMade = affectedRows > 0;
-        
-        if (changesWereMade) {
-          console.log(`Set cell (${row}, ${col}) = ${value} in branch: ${branch}`);
+        // Value is different, make the change
+        if (value === 0) {
+          // Remove the cell if value is 0 (empty)
+          await pool.execute(
+            'DELETE FROM sudoku_cells WHERE row_num = ? AND col_num = ?',
+            [row, col]
+          );
+          console.log(`Cleared cell (${row}, ${col}) in branch: ${branch}`);
+          changesWereMade = true;
         } else {
-          console.log(`No change - cell (${row}, ${col}) already had value ${value} in branch: ${branch}`);
+          // Insert or update the cell value
+          await pool.execute(
+            'INSERT INTO sudoku_cells (row_num, col_num, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
+            [row, col, value]
+          );
+          console.log(`Set cell (${row}, ${col}) = ${value} in branch: ${branch}`);
+          changesWereMade = true;
         }
       }
       
