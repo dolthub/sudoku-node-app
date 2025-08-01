@@ -358,7 +358,7 @@ class Database {
   }
 
   // Generate a legitimate Sudoku puzzle and solution
-  private generateSudokuPuzzle(difficulty: string = 'medium', maxAttempts: number = 50): { solution: number[][], puzzle: number[][] } {
+  private generateSudokuPuzzle(difficulty: string = 'medium'): { solution: number[][], puzzle: number[][] } {
     // Start with a base valid Sudoku pattern
     const baseSolution: number[][] = [
       [1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -375,52 +375,89 @@ class Database {
     // Apply shuffling transformations to create a unique board
     const solution = this.shuffleBoard(baseSolution);
     
-    // Create puzzle by removing cells from the solution
-    const puzzle: number[][] = solution.map(row => [...row]); // Deep copy
-    
-    // Determine number of cells to remove based on difficulty
-    let cellsToRemove: number;
+    // Determine target number of cells to remove based on difficulty
+    let targetCellsToRemove: number;
     switch (difficulty) {
       case 'easy':
-        cellsToRemove = 30 + Math.floor(Math.random() * 6); // 30-35 cells
+        targetCellsToRemove = 30 + Math.floor(Math.random() * 6); // 30-35 cells
         break;
       case 'medium':
-        cellsToRemove = 40 + Math.floor(Math.random() * 6); // 40-45 cells
+        targetCellsToRemove = 40 + Math.floor(Math.random() * 6); // 40-45 cells
         break;
       case 'hard':
-        cellsToRemove = 50 + Math.floor(Math.random() * 6); // 50-55 cells
+        targetCellsToRemove = 50 + Math.floor(Math.random() * 6); // 50-55 cells
         break;
       default:
-        cellsToRemove = 40 + Math.floor(Math.random() * 6); // default to medium
+        targetCellsToRemove = 40 + Math.floor(Math.random() * 6); // default to medium
     }
     
-    const removedPositions = new Set<string>();
+    // Create puzzle by incrementally removing cells with validation at each step
+    const puzzle = this.removeeCellsIncrementally(solution, targetCellsToRemove);
     
-    while (removedPositions.size < cellsToRemove) {
-      const row = Math.floor(Math.random() * 9);
-      const col = Math.floor(Math.random() * 9);
-      const key = `${row},${col}`;
-      
-      if (!removedPositions.has(key)) {
-        puzzle[row][col] = 0; // Remove the cell
-        removedPositions.add(key);
-      }
-    }
-    
-    // Validate that the puzzle has exactly one solution
-    if (!this.hasUniqueSolution(puzzle)) {
-      if (maxAttempts > 1) {
-        console.log(`Generated puzzle has multiple solutions, regenerating... (${maxAttempts - 1} attempts left)`);
-        // Recursively try again until we get a unique solution
-        return this.generateSudokuPuzzle(difficulty, maxAttempts - 1);
-      } else {
-        console.warn('Could not generate puzzle with unique solution after maximum attempts, using current puzzle');
-        // Fallback: return the puzzle anyway (better than infinite loop)
-      }
-    }
-    
-    console.log(`Generated ${difficulty} puzzle with ${cellsToRemove} empty cells`);
+    console.log(`Generated ${difficulty} puzzle with ${81 - this.countFilledCells(puzzle)} empty cells`);
     return { solution, puzzle };
+  }
+
+  // Remove cells one by one, validating unique solution at each step
+  private removeeCellsIncrementally(solution: number[][], targetToRemove: number): number[][] {
+    const puzzle = solution.map(row => [...row]); // Deep copy
+    
+    // Create list of all positions
+    const allPositions: { row: number, col: number }[] = [];
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        allPositions.push({ row, col });
+      }
+    }
+    
+    // Shuffle the positions for random removal order
+    for (let i = allPositions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allPositions[i], allPositions[j]] = [allPositions[j], allPositions[i]];
+    }
+    
+    let removedCount = 0;
+    let positionIndex = 0;
+    
+    while (removedCount < targetToRemove && positionIndex < allPositions.length) {
+      const { row, col } = allPositions[positionIndex];
+      
+      // Skip if already removed
+      if (puzzle[row][col] === 0) {
+        positionIndex++;
+        continue;
+      }
+      
+      // Temporarily remove the cell
+      const originalValue = puzzle[row][col];
+      puzzle[row][col] = 0;
+      
+      // Check if puzzle still has unique solution
+      if (this.hasUniqueSolution(puzzle)) {
+        // Good! Keep the cell removed
+        removedCount++;
+        console.log(`Removed cell (${row + 1}, ${col + 1}), ${removedCount}/${targetToRemove} removed`);
+      } else {
+        // Bad! Restore the cell
+        puzzle[row][col] = originalValue;
+      }
+      
+      positionIndex++;
+    }
+    
+    console.log(`Successfully removed ${removedCount} cells while maintaining unique solution`);
+    return puzzle;
+  }
+
+  // Count filled cells in a puzzle
+  private countFilledCells(puzzle: number[][]): number {
+    let count = 0;
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        if (puzzle[row][col] !== 0) count++;
+      }
+    }
+    return count;
   }
 
   // Check if a Sudoku puzzle has exactly one unique solution
