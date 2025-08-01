@@ -55,9 +55,11 @@ function App() {
     }
   };
 
-  const fetchBoard = async (branch: string) => {
+  const fetchBoard = async (branch: string, showLoading: boolean = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       setError(null);
       
       const response = await fetch(`${API_BASE_URL}/api/games/${branch}/board`);
@@ -74,9 +76,12 @@ function App() {
       setBoard([]);
       setErrors([]);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
+
 
   const createGame = async () => {
     if (!newGameName.trim()) return;
@@ -134,8 +139,8 @@ function App() {
         setGameCompleted(true);
       }
 
-      // Refresh the board to show the updated state
-      await fetchBoard(selectedGame);
+      // Refresh the board to show the updated state (without showing loading screen)
+      await fetchBoard(selectedGame, false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update cell');
       throw err; // Re-throw so the component can handle the error state
