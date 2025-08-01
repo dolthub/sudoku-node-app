@@ -25,8 +25,8 @@ Dolt SQL Server (Port 3306)
 ## Quick Start
 
 ### Prerequisites
-- Node.js (v16 or higher)
 - Dolt (required - install from https://github.com/dolthub/dolt)
+- Node.js (v16 or higher)
 
 ### Installation & Running
 

@@ -237,20 +237,38 @@ class Database {
     try {
       const pool = branch === 'main' ? this.mainPool : this.getBranchPool(branch);
       
+      let changesWereMade = false;
+      
       if (value === 0) {
         // Remove the cell if value is 0 (empty)
-        await pool.execute(
+        const [result] = await pool.execute(
           'DELETE FROM sudoku_cells WHERE row_num = ? AND col_num = ?',
           [row, col]
         );
-        console.log(`Cleared cell (${row}, ${col}) in branch: ${branch}`);
+        const affectedRows = (result as any).affectedRows;
+        changesWereMade = affectedRows > 0;
+        
+        if (changesWereMade) {
+          console.log(`Cleared cell (${row}, ${col}) in branch: ${branch}`);
+        } else {
+          console.log(`No change - cell (${row}, ${col}) was already empty in branch: ${branch}`);
+        }
       } else {
         // Insert or update the cell value
-        await pool.execute(
+        const [result] = await pool.execute(
           'INSERT INTO sudoku_cells (row_num, col_num, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
           [row, col, value]
         );
-        console.log(`Set cell (${row}, ${col}) = ${value} in branch: ${branch}`);
+        // For INSERT ... ON DUPLICATE KEY UPDATE:
+        // affectedRows = 1 if INSERT, 2 if UPDATE with different value, 0 if UPDATE with same value
+        const affectedRows = (result as any).affectedRows;
+        changesWereMade = affectedRows > 0;
+        
+        if (changesWereMade) {
+          console.log(`Set cell (${row}, ${col}) = ${value} in branch: ${branch}`);
+        } else {
+          console.log(`No change - cell (${row}, ${col}) already had value ${value} in branch: ${branch}`);
+        }
       }
       
       // Check if the game is complete (81 cells filled and no errors)
@@ -275,14 +293,18 @@ class Database {
         }
       }
       
-      // Commit the move to the branch
-      const moveDescription = value === 0 ? `Clear cell (${row}, ${col})` : `Set cell (${row}, ${col}) = ${value}`;
-      const commitMessage = isComplete ? `${moveDescription} - GAME COMPLETED! 🎉` : moveDescription;
-      await pool.execute(
-        'CALL DOLT_COMMIT("-Am", ?)',
-        [commitMessage]
-      );
-      console.log(`Committed move: ${commitMessage}`);
+      // Only commit if changes were actually made
+      if (changesWereMade) {
+        const moveDescription = value === 0 ? `Clear cell (${row}, ${col})` : `Set cell (${row}, ${col}) = ${value}`;
+        const commitMessage = isComplete ? `${moveDescription} - GAME COMPLETED! 🎉` : moveDescription;
+        await pool.execute(
+          'CALL DOLT_COMMIT("-Am", ?)',
+          [commitMessage]
+        );
+        console.log(`Committed move: ${commitMessage}`);
+      } else {
+        console.log(`Skipped commit - no changes were made to branch: ${branch}`);
+      }
       
       return { isComplete };
     } catch (error) {
