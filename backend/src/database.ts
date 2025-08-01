@@ -34,8 +34,9 @@ class Database {
     try {
       console.log(`Creating new game: ${gameName}`);
       
-      // Generate unique branch name
-      const branchName = `game_${gameName}_${Date.now()}`;
+      // Generate unique branch name (sanitize for git/dolt compatibility)
+      const sanitizedGameName = gameName.replace(/[^a-zA-Z0-9]/g, '_');
+      const branchName = `game_${sanitizedGameName}_${Date.now()}`;
       
       // Create Dolt branch using SQL
       console.log(`Creating branch ${branchName} using DOLT_BRANCH()`);
