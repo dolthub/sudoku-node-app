@@ -159,7 +159,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Sudoku Game</h1>
+        <h1>SuDOLTku</h1>
         <p>Create and play games using Dolt branches</p>
       </header>
       <main>
