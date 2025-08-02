@@ -520,7 +520,7 @@ class Database {
 
   // Generate impossible puzzle using reverse approach: add cells until unique solution
   private generateImpossiblePuzzle(): { solution: number[][], puzzle: number[][] } {
-    const maxAttempts = 100;
+    const maxAttempts = 5; // Reduced from 100 to avoid hanging
     let attempts = 0;
     
     while (attempts < maxAttempts) {
@@ -571,13 +571,13 @@ class Database {
             }
             
             // If we have too many cells and still no unique solution, start over
-            if (cellsAdded > 35) {
+            if (cellsAdded > 25) { // Reduced from 35 to speed up generation
               break;
             }
           }
         }
         
-        if (cellsAdded > 35) break; // Too many cells, try again
+        if (cellsAdded > 25) break; // Too many cells, try again
       }
     }
     

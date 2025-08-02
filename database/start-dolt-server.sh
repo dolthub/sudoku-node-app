@@ -5,6 +5,9 @@
 
 set -e
 
+# Add user bin to PATH for Dolt
+export PATH="$HOME/bin:$PATH"
+
 echo "Starting Dolt SQL server for Sudoku game..."
 
 # Create and change to database directory
