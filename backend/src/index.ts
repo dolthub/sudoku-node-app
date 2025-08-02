@@ -28,9 +28,9 @@ app.post('/api/games', async (req, res) => {
       });
     }
     
-    if (!['easy', 'medium', 'hard'].includes(difficulty)) {
+    if (!['easy', 'medium', 'hard', 'impossible'].includes(difficulty)) {
       return res.status(400).json({ 
-        error: 'Difficulty must be easy, medium, or hard' 
+        error: 'Difficulty must be easy, medium, hard, or impossible' 
       });
     }
     

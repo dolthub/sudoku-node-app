@@ -360,6 +360,12 @@ class Database {
 
   // Generate a legitimate Sudoku puzzle and solution
   private generateSudokuPuzzle(difficulty: string = 'medium'): { solution: number[][], puzzle: number[][] } {
+    if (difficulty === 'impossible') {
+      // Use reverse generation for impossible difficulty
+      console.log('Generating impossible puzzle using reverse generation...');
+      return this.generateImpossiblePuzzle();
+    }
+    
     // Generate a completely random valid Sudoku solution
     console.log('Generating random Sudoku solution...');
     const solution = this.generateRandomSudokuSolution();
@@ -510,6 +516,108 @@ class Database {
     }
     
     return true; // Board is complete
+  }
+
+  // Generate impossible puzzle using reverse approach: add cells until unique solution
+  private generateImpossiblePuzzle(): { solution: number[][], puzzle: number[][] } {
+    const maxAttempts = 100;
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      attempts++;
+      console.log(`Impossible puzzle generation attempt ${attempts}...`);
+      
+      // Start with empty board
+      const puzzle: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+      
+      // Create list of all positions
+      const allPositions: { row: number, col: number }[] = [];
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          allPositions.push({ row, col });
+        }
+      }
+      
+      // Shuffle positions for random order
+      for (let i = allPositions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allPositions[i], allPositions[j]] = [allPositions[j], allPositions[i]];
+      }
+      
+      // Add cells one by one until we have exactly one solution
+      let cellsAdded = 0;
+      for (const { row, col } of allPositions) {
+        // Try numbers 1-9 in random order
+        const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        for (let i = numbers.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+        }
+        
+        for (const num of numbers) {
+          if (this.isValidMove(puzzle, row, col, num)) {
+            puzzle[row][col] = num;
+            cellsAdded++;
+            
+            // Check if puzzle has exactly one solution
+            if (this.hasUniqueSolution(puzzle)) {
+              console.log(`Found impossible puzzle with ${cellsAdded} cells in ${attempts} attempts`);
+              
+              // Generate the complete solution by solving the puzzle
+              const solution = this.solvePuzzle(puzzle);
+              if (solution) {
+                return { solution, puzzle };
+              }
+            }
+            
+            // If we have too many cells and still no unique solution, start over
+            if (cellsAdded > 35) {
+              break;
+            }
+          }
+        }
+        
+        if (cellsAdded > 35) break; // Too many cells, try again
+      }
+    }
+    
+    // Fallback: if we can't generate an impossible puzzle, create a very hard one
+    console.warn('Could not generate impossible puzzle, falling back to very hard puzzle');
+    const solution = this.generateRandomSudokuSolution();
+    const puzzle = this.removeeCellsIncrementally(solution, 60); // Remove 60+ cells
+    return { solution, puzzle };
+  }
+
+  // Solve a puzzle to get the complete solution
+  private solvePuzzle(puzzle: number[][]): number[][] | null {
+    const solution = puzzle.map(row => [...row]); // Deep copy
+    
+    const solve = (board: number[][]): boolean => {
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (board[row][col] === 0) {
+            for (let num = 1; num <= 9; num++) {
+              if (this.isValidMove(board, row, col, num)) {
+                board[row][col] = num;
+                
+                if (solve(board)) {
+                  return true;
+                }
+                
+                board[row][col] = 0; // backtrack
+              }
+            }
+            return false; // No valid number found for this cell
+          }
+        }
+      }
+      return true; // Found a complete solution
+    };
+    
+    if (solve(solution)) {
+      return solution;
+    }
+    return null;
   }
 
   // Check if a Sudoku puzzle has exactly one unique solution

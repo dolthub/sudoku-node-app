@@ -233,6 +233,7 @@ function App() {
                   <option value="easy">Easy</option>
                   <option value="medium">Medium</option>
                   <option value="hard">Hard</option>
+                  <option value="impossible">Impossible</option>
                 </select>
                 <button 
                   onClick={createGame}
