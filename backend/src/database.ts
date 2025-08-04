@@ -162,7 +162,7 @@ class Database {
     try {
       console.log(`Getting game board from branch: ${branch}`);
       
-      const pool = branch === 'main' ? this.mainPool : this.getBranchPool(branch);
+      const pool = this.getBranchPool(branch);
       
       // Get current board state
       const [rows] = await pool.execute(
@@ -225,7 +225,7 @@ class Database {
   // Update a specific cell in the game board
   async updateGameCell(branch: string, row: number, col: number, value: number): Promise<{ isComplete: boolean }> {
     try {
-      const pool = branch === 'main' ? this.mainPool : this.getBranchPool(branch);
+      const pool = this.getBranchPool(branch);
       
       // First, check the current value to see if we need to make changes
       const [currentRows] = await pool.execute(
