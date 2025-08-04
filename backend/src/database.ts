@@ -43,19 +43,8 @@ class Database {
       await this.mainPool.execute('CALL DOLT_BRANCH(?)', [branchName]);
       console.log(`Branch ${branchName} created successfully`);
       
-      // Create connection pool for the new branch
-      const branchPool = mysql.createPool({
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '3306'),
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: `sudoku_games/${branchName}`,
-        waitForConnections: true,
-        connectionLimit: 5,
-        queueLimit: 0,
-      });
-      
-      this.branchPools.set(branchName, branchPool);
+      // Get connection pool for the new branch
+      const branchPool = this.getBranchPool(branchName);
       
       // Initialize table structure in the new branch
       console.log(`Initializing table structure in branch ${branchName}`);
