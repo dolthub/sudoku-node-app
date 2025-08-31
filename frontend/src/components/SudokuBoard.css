@@ -2,12 +2,20 @@
   display: flex;
   flex-direction: column;
   border: 3px solid #333;
-  width: 450px;
-  height: 450px;
   margin: 20px auto;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   outline: none;
   position: relative;
+}
+
+.sudoku-9x9 {
+  width: 450px;
+  height: 450px;
+}
+
+.sudoku-16x16 {
+  width: 640px;
+  height: 640px;
 }
 
 .sudoku-row {
@@ -21,11 +29,18 @@
   align-items: center;
   justify-content: center;
   border: 1px solid #ccc;
-  font-size: 20px;
   font-weight: bold;
   color: #333;
   cursor: pointer;
   transition: background-color 0.2s;
+}
+
+.sudoku-9x9 .sudoku-cell {
+  font-size: 20px;
+}
+
+.sudoku-16x16 .sudoku-cell {
+  font-size: 14px;
 }
 
 .sudoku-cell:hover {
@@ -40,11 +55,21 @@
   background-color: #e8e8e8;
 }
 
-.sudoku-cell:nth-child(3n) {
+/* 9x9 subgrid borders (3x3) */
+.sudoku-9x9 .sudoku-cell:nth-child(3n) {
   border-right: 3px solid #333;
 }
 
-.sudoku-row:nth-child(3n) .sudoku-cell {
+.sudoku-9x9 .sudoku-row:nth-child(3n) .sudoku-cell {
+  border-bottom: 3px solid #333;
+}
+
+/* 16x16 subgrid borders (4x4) */
+.sudoku-16x16 .sudoku-cell:nth-child(4n) {
+  border-right: 3px solid #333;
+}
+
+.sudoku-16x16 .sudoku-row:nth-child(4n) .sudoku-cell {
   border-bottom: 3px solid #333;
 }
 

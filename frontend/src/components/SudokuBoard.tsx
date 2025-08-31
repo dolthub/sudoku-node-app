@@ -6,19 +6,20 @@ interface SudokuBoardProps {
   errors: boolean[][];
   showErrors: boolean;
   branch: string;
+  size: number;
   onCellUpdate: (row: number, col: number, value: number) => Promise<void>;
 }
 
-const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, branch, onCellUpdate }) => {
+const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, branch, size, onCellUpdate }) => {
   const [selectedCell, setSelectedCell] = useState<{row: number, col: number} | null>(null);
   const [updating, setUpdating] = useState(false);
 
   // Initialize selection to first empty cell (upper-left) only when board first loads
   useEffect(() => {
-    if (board.length === 9 && selectedCell === null) {
+    if (board.length === size && selectedCell === null) {
       // Find the first empty cell (upper-left most)
-      for (let row = 0; row < 9; row++) {
-        for (let col = 0; col < 9; col++) {
+      for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
           if (board[row][col] === 0) {
             setSelectedCell({ row, col });
             return;
@@ -28,7 +29,7 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
       // If no empty cells, select (0,0)
       setSelectedCell({ row: 0, col: 0 });
     }
-  }, [board.length]); // Only depend on board.length, not board content or selectedCell
+  }, [board.length, size]); // Depend on both board.length and size
 
   useEffect(() => {
     const handleKeyPress = async (event: KeyboardEvent) => {
@@ -37,10 +38,19 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
       const key = event.key;
       let value: number | null = null;
 
-      // Handle number input
-      if (key >= '0' && key <= '9') {
+      // Handle number input based on game size
+      if (size === 9 && key >= '0' && key <= '9') {
         value = parseInt(key);
-      } else if (key === 'Backspace' || key === 'Delete') {
+      } else if (size === 16) {
+        // For 16x16, support 0-9 and A-F (hex notation)
+        if (key >= '0' && key <= '9') {
+          value = parseInt(key);
+        } else if (key.toLowerCase() >= 'a' && key.toLowerCase() <= 'f') {
+          value = key.toLowerCase().charCodeAt(0) - 'a'.charCodeAt(0) + 10;
+        }
+      }
+      
+      if (key === 'Backspace' || key === 'Delete') {
         value = 0;
       } else if (key === 'Escape') {
         setSelectedCell(null);
@@ -58,13 +68,13 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
             newRow = Math.max(0, selectedCell.row - 1);
             break;
           case 'ArrowDown':
-            newRow = Math.min(8, selectedCell.row + 1);
+            newRow = Math.min(size - 1, selectedCell.row + 1);
             break;
           case 'ArrowLeft':
             newCol = Math.max(0, selectedCell.col - 1);
             break;
           case 'ArrowRight':
-            newCol = Math.min(8, selectedCell.col + 1);
+            newCol = Math.min(size - 1, selectedCell.col + 1);
             break;
         }
         
@@ -94,15 +104,25 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
     setSelectedCell({ row: rowIndex, col: colIndex });
   };
 
+  const subgridSize = size === 16 ? 4 : 3;
+  
+  const formatCellValue = (value: number): string => {
+    if (value === 0) return '';
+    if (size === 16 && value > 9) {
+      return String.fromCharCode('A'.charCodeAt(0) + value - 10); // 10=A, 11=B, etc.
+    }
+    return value.toString();
+  };
+  
   return (
-    <div className="sudoku-board" tabIndex={0}>
+    <div className={`sudoku-board sudoku-${size}x${size}`} tabIndex={0}>
       {board.map((row, rowIndex) => (
         <div key={rowIndex} className="sudoku-row">
           {row.map((cell, colIndex) => (
             <div
               key={`${rowIndex}-${colIndex}`}
               className={`sudoku-cell ${
-                Math.floor(rowIndex / 3) % 2 === Math.floor(colIndex / 3) % 2
+                Math.floor(rowIndex / subgridSize) % 2 === Math.floor(colIndex / subgridSize) % 2
                   ? 'light-section'
                   : 'dark-section'
               } ${
@@ -116,7 +136,7 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
               }`}
               onClick={() => handleCellClick(rowIndex, colIndex)}
             >
-              {cell !== 0 ? cell : ''}
+              {formatCellValue(cell)}
               {updating && selectedCell?.row === rowIndex && selectedCell?.col === colIndex && (
                 <div className="updating-indicator">...</div>
               )}
@@ -126,7 +146,7 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ board, errors, showErrors, br
       ))}
       {selectedCell && (
         <div className="instructions">
-          Press 1-9 to set value, 0 to clear, ESC to deselect
+          {size === 9 ? 'Press 1-9 to set value, 0 to clear, ESC to deselect' : 'Press 1-9,A-F to set value, 0 to clear, ESC to deselect'}
         </div>
       )}
     </div>

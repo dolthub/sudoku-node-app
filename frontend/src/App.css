@@ -159,7 +159,7 @@ main {
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
-.difficulty-select {
+.difficulty-select, .size-select {
   padding: 8px 12px;
   border: 2px solid #ddd;
   border-radius: 4px;
@@ -167,14 +167,14 @@ main {
   background-color: white;
   cursor: pointer;
   transition: border-color 0.2s;
-  min-width: 150px;
+  min-width: 120px;
 }
 
-.difficulty-select:hover {
+.difficulty-select:hover, .size-select:hover {
   border-color: #007bff;
 }
 
-.difficulty-select:focus {
+.difficulty-select:focus, .size-select:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);

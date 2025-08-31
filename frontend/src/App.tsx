@@ -6,6 +6,7 @@ interface GameInfo {
   branch: string;
   game_name: string;
   created_at: string;
+  size: number;
 }
 
 interface GameBoardData {
@@ -15,6 +16,7 @@ interface GameBoardData {
   errors: boolean[][];
   initial_board: number[][];
   created_at: string;
+  size: number;
 }
 
 function App() {
@@ -28,8 +30,10 @@ function App() {
   const [showCreateGame, setShowCreateGame] = useState(false);
   const [newGameName, setNewGameName] = useState('');
   const [newGameDifficulty, setNewGameDifficulty] = useState('medium');
+  const [newGameSize, setNewGameSize] = useState(9);
   const [creating, setCreating] = useState(false);
   const [gameCompleted, setGameCompleted] = useState(false);
+  const [currentGameSize, setCurrentGameSize] = useState(9);
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -72,6 +76,7 @@ function App() {
       const data: GameBoardData = await response.json();
       setBoard(data.board);
       setErrors(data.errors || []);
+      setCurrentGameSize(data.size || 9);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load board');
       setBoard([]);
@@ -96,7 +101,8 @@ function App() {
         },
         body: JSON.stringify({ 
           gameName: newGameName.trim(),
-          difficulty: newGameDifficulty 
+          difficulty: newGameDifficulty,
+          size: newGameSize
         }),
       });
       
@@ -189,7 +195,7 @@ function App() {
               <option value="">Select a game to play</option>
               {games.map(game => (
                 <option key={game.branch} value={game.branch}>
-                  {game.game_name}
+                  {game.game_name} ({game.size}x{game.size})
                 </option>
               ))}
             </select>
@@ -226,6 +232,14 @@ function App() {
                   onKeyPress={(e) => e.key === 'Enter' && createGame()}
                 />
                 <select
+                  value={newGameSize}
+                  onChange={(e) => setNewGameSize(parseInt(e.target.value))}
+                  className="size-select"
+                >
+                  <option value={9}>9x9</option>
+                  <option value={16}>16x16</option>
+                </select>
+                <select
                   value={newGameDifficulty}
                   onChange={(e) => setNewGameDifficulty(e.target.value)}
                   className="difficulty-select"
@@ -246,6 +260,7 @@ function App() {
                     setShowCreateGame(false);
                     setNewGameName('');
                     setNewGameDifficulty('medium');
+                    setNewGameSize(9);
                   }}
                 >
                   Cancel
@@ -261,6 +276,7 @@ function App() {
             errors={errors}
             showErrors={showErrors}
             branch={selectedGame}
+            size={currentGameSize}
             onCellUpdate={handleCellUpdate}
           />
         ) : (

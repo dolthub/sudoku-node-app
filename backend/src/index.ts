@@ -20,7 +20,7 @@ app.get('/health', (req, res) => {
 // Create a new game (creates Dolt branch)
 app.post('/api/games', async (req, res) => {
   try {
-    const { gameName, difficulty = 'medium' } = req.body;
+    const { gameName, difficulty = 'medium', size = 9 } = req.body;
     
     if (!gameName || typeof gameName !== 'string' || gameName.trim().length === 0) {
       return res.status(400).json({ 
@@ -34,7 +34,13 @@ app.post('/api/games', async (req, res) => {
       });
     }
     
-    const result = await db.createGame(gameName.trim(), difficulty);
+    if (![9, 16].includes(size)) {
+      return res.status(400).json({ 
+        error: 'Size must be 9 or 16' 
+      });
+    }
+    
+    const result = await db.createGame(gameName.trim(), difficulty, size);
     res.status(201).json(result);
   } catch (error) {
     console.error('Error creating game:', error);
@@ -72,21 +78,31 @@ app.put('/api/games/:branch/cell', async (req, res) => {
     const branch = req.params.branch;
     const { row, col, value } = req.body;
     
+    // Get game size to validate coordinates and values
+    const gameBoard = await db.getGameBoard(branch);
+    if (!gameBoard) {
+      return res.status(404).json({ 
+        error: 'No game found for this branch',
+        branch: branch
+      });
+    }
+    const size = gameBoard.size;
+    
     if (typeof row !== 'number' || typeof col !== 'number' || typeof value !== 'number') {
       return res.status(400).json({ 
         error: 'Invalid data. Expected row, col, and value as numbers.' 
       });
     }
     
-    if (row < 1 || row > 9 || col < 1 || col > 9) {
+    if (row < 1 || row > size || col < 1 || col > size) {
       return res.status(400).json({ 
-        error: 'Row and column must be between 1 and 9.' 
+        error: `Row and column must be between 1 and ${size}.` 
       });
     }
     
-    if (value < 0 || value > 9) {
+    if (value < 0 || value > size) {
       return res.status(400).json({ 
-        error: 'Value must be between 0 (empty) and 9.' 
+        error: `Value must be between 0 (empty) and ${size}.` 
       });
     }
     
